@@ -20,7 +20,7 @@ setuptools.setup(
          "Operating System :: OS Independent",
      ],
       data_files=[
-          ('templates', glob(os.path.join(os.path.dirname(__file__), "astrocyte", "templates")))
+          ('templates', glob.glob(os.path.join(os.path.dirname(__file__), "astrocyte", "templates")))
       ],
      entry_points={
         'console_scripts': [
