@@ -1,2 +1,3 @@
 # astrocyte
-Packager for Glia. Distribute models amongst the stars
+
+Packager for Glia. Distribute your models amongst the stars.
