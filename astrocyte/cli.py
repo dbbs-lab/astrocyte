@@ -57,6 +57,11 @@ def astrocyte_cli():
 
 def create_package(args):
     folder = os.path.abspath(args.folder)
+    try:
+        os.mkdir(folder)
+    except FileExistsError as _:
+        print("Target location already exists.")
+        exit(1)
     # Ask package information
     pkg_data = {
         "pkg_name": args.folder,
@@ -68,7 +73,6 @@ def create_package(args):
     astro_folder = os.path.join(folder, ".astro")
 
     # Create package files
-    os.mkdir(folder)                                                # root folder
     create_template("setup.py", folder, locals=pkg_data)            # setup.py
     create_template("README.md", folder, locals=pkg_data)           # setup.py
     os.mkdir(pkg_folder)                                            # package folder
