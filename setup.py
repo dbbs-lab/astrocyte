@@ -20,11 +20,14 @@ setuptools.setup(
          "Operating System :: OS Independent",
      ],
       data_files=[
-          ('templates', glob.glob(os.path.join(os.path.dirname(__file__), "astrocyte", "templates")))
+          ('templates', glob.glob(os.path.join(os.path.dirname(__file__), "astrocyte", "templates", "*")))
       ],
      entry_points={
         'console_scripts': [
             'astro = astrocyte.cli:astrocyte_cli'
         ]
      },
+     install_requires=[
+        "nrn-glia>=0.0.1-a5"
+     ]
  )

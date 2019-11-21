@@ -19,7 +19,7 @@ setuptools.setup(
          "Operating System :: OS Independent",
      ],
      data_files=[
-         ('mod', glob.glob(os.path.join(os.path.dirname(__file__), "{{name}}", "mod")))
+         ('mod', glob.glob(os.path.join(os.path.dirname(__file__), "{{name}}", "mod", "*")))
      ],
      install_requires=[
       "nrn-glia>={|glia_version|}"
