@@ -177,6 +177,7 @@ class Writer:
         for k, v in self.obj.__dict__.items():
             if not k in self.__class__.exclude:
                 lines.append(self.property_line(k, v, indent))
+        lines.append(self.line(self.obj.get_writername() + '.pkg = pkg', indent))
         return lines
 
     def footer(self, indent=0):
