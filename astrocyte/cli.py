@@ -57,9 +57,9 @@ def astrocyte_cli():
     create_package_parser.set_defaults(func=create_package)
 
     # Add mod file
-    add_parser = subparsers.add_parser("add", aliases=('c'), description="Create packages or components.")
+    add_parser = subparsers.add_parser("add", aliases=('a'), description="Create packages or components.")
     add_subparsers = add_parser.add_subparsers()
-    add_mod_parser = add_subparsers.add_parser("mod", aliases=('pkg', 'p'), description="Add a mod file to your package.")
+    add_mod_parser = add_subparsers.add_parser("mod", aliases=('m'), description="Add a mod file to your package.")
     add_mod_parser.add_argument('file', action='store', help='Path of the mod file.')
     add_mod_parser.set_defaults(func=add_mod_file)
 
