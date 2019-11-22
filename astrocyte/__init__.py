@@ -115,7 +115,7 @@ class Mod:
 
 def get_glia_version():
     # TODO: Use pip to find the installed glia version.
-    return "0.0.1-a5"
+    return "0.0.1-a6"
 
 def get_minimum_glia_version():
     # TODO: Use pip to find the installed glia version and determine major version
