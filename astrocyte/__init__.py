@@ -1,16 +1,34 @@
 import os, sys, json
 from shutil import copy2 as copy_file
-from .exceptions import AstroError, StructureError
+from .exceptions import AstroError, StructureError, UploadError, \
+    InvalidDistributionError, InvalidMetaError
 
 __version__ = "0.0.1a3"
 
+def execute_command(cmnd):
+    import subprocess
+    process = subprocess.Popen(cmnd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    std_out_str, std_err_str = '', ''
+    for c in iter(lambda: process.stdout.read(1), b''):
+        s = c.decode('UTF-8')
+        sys.stdout.write(s)
+        std_out_str += s
+    for c in iter(lambda: process.stderr.read(1), b''):
+        s = c.decode('UTF-8')
+        std_err_str += s
+    return process, std_out_str, std_err_str
+
 class Package:
-    def __init__(self, pkg_data):
+    def __init__(self, path, pkg_data):
         self.data = pkg_data
         self.package_name = pkg_data["pkg_name"]
         self.name = pkg_data["name"]
         self.astro_version = pkg_data["astro_version"]
         self.glia_version = pkg_data["glia_version"]
+        self.set_path(path)
+
+    def __str__(self):
+        return self.package_name + " v" + self.version
 
     def add_mod_file(self, file):
         if not os.path.exists(file):
@@ -34,13 +52,40 @@ class Package:
 
     def set_path(self, path):
         self.path = path
+        sys.path.insert(0, self.path)
+        self.version = __import__(self.name).__version__
+        sys.path.remove(self.path)
 
     def get_source_path(self, *args):
         return os.path.join(self.path, self.name, *args)
 
     def build(self):
         import subprocess
-        subprocess.call([sys.executable, "setup.py", "bdist_wheel"])
+        print("Building glia package", self)
+        rcode = subprocess.call([sys.executable, "setup.py", "bdist_wheel"])
+        self._built = rcode == 0
+        if self._built:
+            print("Glia package built.")
+
+    def built(self):
+        return hasattr(self, "_built") and self._built
+
+    def upload(self):
+        import subprocess
+        print("Uploading glia package", self)
+        cmnd = ["twine", "upload", os.path.join("dist", "*{}*".format(self.version))]
+        process, out, err = execute_command(cmnd)
+        self._uploaded = process.returncode == 0
+        if not self._uploaded:
+            if err.find("InvalidDistributionError") != -1:
+                raise InvalidDistributionError("No build files for " + str(self)
+                    + ". Use `astro build`.")
+            elif err.find("Error: Use a valid email address") != -1:
+                raise InvalidMetaError("The package author email metadata is invalid.")
+            else:
+                sys.stderr.write(err)
+        else:
+            print("Uploaded glia package", self)
 
 def get_package(path=None):
     path = path or os.getcwd()
@@ -49,8 +94,7 @@ def get_package(path=None):
     except FileNotFoundError as _:
         raise AstroError("This directory is not a glia package.")
         exit(1)
-    pkg = Package(pkg_data)
-    pkg.set_path(path)
+    pkg = Package(path, pkg_data)
     return pkg
 
 class Mod:

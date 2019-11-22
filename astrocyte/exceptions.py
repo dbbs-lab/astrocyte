@@ -3,3 +3,12 @@ class AstroError(Exception):
 
 class StructureError(AstroError):
     pass
+
+class UploadError(AstroError):
+    pass
+
+class InvalidDistributionError(UploadError):
+    pass
+
+class InvalidMetaError(UploadError):
+    pass
