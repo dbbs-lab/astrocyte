@@ -2,7 +2,7 @@ import os, sys, argparse, json
 from shutil import copy2 as copy_file
 try:
     from .templates import create_template
-    from . import Package, get_package, get_minimum_glia_version, __version__
+    from . import Package, get_package, get_glia_version, __version__
     from .exceptions import AstroError
 except ModuleNotFoundError as _:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -92,7 +92,8 @@ def create_package(args):
 
     # Create package files
     create_template("setup.py", folder, locals=pkg_data)            # setup.py
-    create_template("README.md", folder, locals=pkg_data)           # setup.py
+    create_template("README.md", folder, locals=pkg_data)           # README
+    create_template(".gitignore", folder)                           # .gitignore
     os.mkdir(pkg_folder)                                            # package folder
     os.mkdir(mod_folder)                                            # mod folder
     create_template("__init__.py", pkg_folder)                      # __init__.py

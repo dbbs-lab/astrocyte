@@ -1,5 +1,11 @@
 import os
-from glia.packaging import Package, Mod
+
+class Package:
+  def __init__(self):
+    self.mods = []
+
+class Mod:
+  pass
 
 def package():
   pkg = Package()

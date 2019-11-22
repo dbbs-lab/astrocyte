@@ -8,7 +8,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
      name='astrocyte',
-     version='0.0.1-a1',
+     version=astrocyte.__version__,
      author="Robin De Schepper",
      author_email="robingilbert.deschepper@unipv.it",
      description="Packager for Glia",
