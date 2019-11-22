@@ -1,14 +1,14 @@
 import setuptools, os, glob
-from {{name}} import __version__
+from dummy import __version__
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-     name='{{name}}',
+     name='dummy',
      version=__version__,
-     author="{{author}}",
-     author_email="{{email}}",
+     author="d",
+     author_email="d",
      description="Glia package of NEURON models",
      long_description=long_description,
      long_description_content_type="text/markdown",
@@ -21,12 +21,12 @@ setuptools.setup(
      ],
      include_package_data=True,
      data_files=[
-         ('mod', glob.glob(os.path.join(os.path.dirname(__file__), "{{name}}", "mod", "*")))
+         ('mod', glob.glob(os.path.join(os.path.dirname(__file__), "dummy", "mod", "*")))
      ],
      entry_points={
-      'glia.package': ['{{name}} = {{name}}']
+      'glia.package': ['dummy = dummy']
      },
      install_requires=[
-      "nrn-glia>={|glia_version|}"
+      "nrn-glia>=0.0.1-a5"
      ]
  )

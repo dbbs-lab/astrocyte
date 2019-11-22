@@ -2,7 +2,7 @@ import os, sys, json
 from shutil import copy2 as copy_file
 from .exceptions import AstroError, StructureError
 
-__version__ = "0.0.1a2"
+__version__ = "0.0.1a3"
 
 class Package:
     def __init__(self, pkg_data):
@@ -37,6 +37,10 @@ class Package:
 
     def get_source_path(self, *args):
         return os.path.join(self.path, self.name, *args)
+
+    def build(self):
+        import subprocess
+        subprocess.call([sys.executable, "setup.py", "bdist_wheel"])
 
 def get_package(path=None):
     path = path or os.getcwd()

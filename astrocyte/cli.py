@@ -63,6 +63,11 @@ def astrocyte_cli():
     add_mod_parser.add_argument('file', action='store', help='Path of the mod file.')
     add_mod_parser.set_defaults(func=add_mod_file)
 
+    # Build wheel
+    wheel_parser = subparsers.add_parser("build", description="Build the package into a wheel.")
+    wheel_parser.add_argument("--upload", action="store_true", help="Upload the wheel after a succesfull build.")
+    wheel_parser.set_defaults(func=build_package)
+
     cl_args = parser.parse_args()
     if hasattr(cl_args, 'func'):
         try:
@@ -103,14 +108,18 @@ def create_package(args):
     # Finish
     print("Package skeleton created.")
 
+def add_mod_file(args):
+    pkg = get_package()
+    pkg.add_mod_file(args.file)
+
+def build_package(args):
+    pkg = get_package()
+    pkg.build()
+
 def make(target, content):
     f = open(target, "w")
     f.write(content)
     f.close()
-
-def add_mod_file(args):
-    pkg = get_package()
-    pkg.add_mod_file(args.file)
 
 def input_required(msg):
     response = ""
