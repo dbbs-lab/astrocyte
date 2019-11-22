@@ -3,7 +3,7 @@ from shutil import copy2 as copy_file
 from .exceptions import AstroError, StructureError, UploadError, \
     InvalidDistributionError, InvalidMetaError
 
-__version__ = "0.0.1a5"
+__version__ = "0.0.1a6"
 
 def execute_command(cmnd):
     import subprocess
@@ -100,6 +100,7 @@ def get_package(path=None):
 class Mod:
     def __init__(self, pkg, namespaced_name):
         self.pkg = pkg
+        self.pkg_name = pkg.name
         splits = namespaced_name.split("__")
         self.asset_name = "__".join(splits[2:-1])
         self.variant = splits[-1]
@@ -115,7 +116,7 @@ class Mod:
 
 def get_glia_version():
     # TODO: Use pip to find the installed glia version.
-    return "0.0.1-a6"
+    return "0.0.1"
 
 def get_minimum_glia_version():
     # TODO: Use pip to find the installed glia version and determine major version
