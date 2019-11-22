@@ -105,7 +105,6 @@ class Writer:
         self.read[i:i] = self.footer(indent)
         self.read[i:i] = self.content(indent)
         self.read[i:i] = self.header(indent)
-        print("".join(self.read))
         self.write()
 
     def header(self, indent=0):
