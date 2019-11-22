@@ -22,6 +22,9 @@ setuptools.setup(
      data_files=[
          ('mod', glob.glob(os.path.join(os.path.dirname(__file__), "{{name}}", "mod", "*")))
      ],
+     entry_points={
+      'glia.package': ['{{name}} = {{name}}']
+     },
      install_requires=[
       "nrn-glia>={|glia_version|}"
      ]

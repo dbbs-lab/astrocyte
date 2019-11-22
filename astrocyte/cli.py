@@ -1,9 +1,14 @@
 import os, sys, argparse, json
+from shutil import copy2 as copy_file
 try:
     from .templates import create_template
+    from . import Package, get_package, get_minimum_glia_version, __version__
+    from .exceptions import AstroError
 except ModuleNotFoundError as _:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+    from astrocyte import Package, get_package, get_glia_version, __version__
     from astrocyte.templates import create_template
+    from astrocyte.exceptions import AstroError
 
 class AliasedSubParsersAction(argparse._SubParsersAction):
     old_init = staticmethod(argparse._ActionsContainer.__init__)
@@ -51,17 +56,27 @@ def astrocyte_cli():
     create_package_parser.add_argument('folder', action='store', help='Location of the package folder.')
     create_package_parser.set_defaults(func=create_package)
 
+    # Add mod file
+    add_parser = subparsers.add_parser("add", aliases=('c'), description="Create packages or components.")
+    add_subparsers = add_parser.add_subparsers()
+    add_mod_parser = add_subparsers.add_parser("mod", aliases=('pkg', 'p'), description="Add a mod file to your package.")
+    add_mod_parser.add_argument('file', action='store', help='Path of the mod file.')
+    add_mod_parser.set_defaults(func=add_mod_file)
+
     cl_args = parser.parse_args()
     if hasattr(cl_args, 'func'):
-        cl_args.func(cl_args)
+        try:
+            cl_args.func(cl_args)
+        except AstroError as e:
+            print(str(e))
+            exit(1)
 
 def create_package(args):
     folder = os.path.abspath(args.folder)
     try:
         os.mkdir(folder)
     except FileExistsError as _:
-        print("Target location already exists.")
-        exit(1)
+        raise AstroError("Target location already exists.") from None
     # Ask package information
     pkg_data = {
         "pkg_name": args.folder,
@@ -69,14 +84,18 @@ def create_package(args):
     }
     pkg_data["author"] = input_required("Author: ")
     pkg_data["email"] = input_required("Email: ")
+    pkg_data["glia_version"] = get_glia_version()
+    pkg_data["astro_version"] = __version__
     pkg_folder = os.path.join(folder, pkg_data["name"])
+    mod_folder = os.path.join(pkg_folder, "mod")
     astro_folder = os.path.join(folder, ".astro")
 
     # Create package files
     create_template("setup.py", folder, locals=pkg_data)            # setup.py
     create_template("README.md", folder, locals=pkg_data)           # setup.py
     os.mkdir(pkg_folder)                                            # package folder
-    make(os.path.join(pkg_folder, "__init__.py"), "")               # __init__.py
+    os.mkdir(mod_folder)                                            # mod folder
+    create_template("__init__.py", pkg_folder)                      # __init__.py
     os.mkdir(astro_folder)                                          # astro folder
     make(os.path.join(astro_folder, "pkg"), json.dumps(pkg_data))   # pkg json
 
@@ -87,6 +106,10 @@ def make(target, content):
     f = open(target, "w")
     f.write(content)
     f.close()
+
+def add_mod_file(args):
+    pkg = get_package()
+    pkg.add_mod_file(args.file)
 
 def input_required(msg):
     response = ""

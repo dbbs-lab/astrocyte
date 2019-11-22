@@ -1,8 +1,5 @@
 import os
-
-def get_minimum_glia_version():
-    # TODO: Use pip to find the installed glia version.
-    return "0.0.1-a5"
+from . import get_minimum_glia_version
 
 def get_constants():
     return {

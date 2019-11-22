@@ -1,5 +1,7 @@
 import setuptools, os, glob
-from setuptools.command.install import install
+import astrocyte
+
+print("Packaging astrocyte version", astrocyte.__version__)
 
 with open("README.md", "r") as fh:
     long_description = fh.read()

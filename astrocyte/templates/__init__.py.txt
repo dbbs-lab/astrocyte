@@ -1,0 +1,8 @@
+import os
+from glia.packaging import Package, Mod
+
+def package():
+  pkg = Package()
+  pkg.name = os.path.basename(os.path.dirname(__file__))
+
+  return pkg
