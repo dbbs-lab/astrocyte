@@ -3,7 +3,7 @@ from shutil import copy2 as copy_file
 from .exceptions import AstroError, StructureError, UploadError, \
     InvalidDistributionError, InvalidMetaError
 
-__version__ = "0.0.1a6"
+__version__ = "0.0.1"
 
 def execute_command(cmnd):
     import subprocess
@@ -46,7 +46,7 @@ class Package:
             raise AstroError("Glia mod names cannot contain double underscores unless the filename follows the Glia naming convention.")
         if og_name != mod_name:
             print("Mod filename changed from '{}' to '{}'".format(og_name, mod_name))
-        copy_file(file, os.path.join(self.path, self.name, "mod", mod_name + ".mod"))
+        import_mod_file(file, os.path.join(self.path, self.name, "mod", mod_name + ".mod"))
         mod = Mod(self, mod_name)
         print("__init__.py updated.")
 
@@ -192,3 +192,14 @@ class Writer:
         init_file = open(self.get_init_path(), "w")
         init_file.writelines(self.read)
         init_file.close()
+
+def import_mod_file(origin, destination):
+    with open(origin, "r") as f:
+        lines = f.readlines()
+    for l in lines:
+        # Remove all suffix definitions
+        if l.lower().strip().startswith("suffix"):
+            print("Removed HOC file suffix: ", l.strip()[6:])
+            lines.remove(l)
+    with open(destination, "w") as f:
+        f.writelines(lines)
