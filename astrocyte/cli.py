@@ -66,11 +66,16 @@ def astrocyte_cli():
     # Build wheel
     wheel_parser = subparsers.add_parser("build", description="Build the package into a wheel.")
     wheel_parser.add_argument("--upload", action="store_true", help="Upload the wheel after a succesfull build.")
+    wheel_parser.add_argument("--install", action="store_true", help="Install the wheel after a succesfull build.")
     wheel_parser.set_defaults(func=build_package)
 
     # Upload wheel
     wheel_parser = subparsers.add_parser("upload", description="Upload current wheel to PyPI.")
     wheel_parser.set_defaults(func=upload_package)
+
+    # Install wheel
+    wheel_parser = subparsers.add_parser("install", description="Install current wheel.")
+    wheel_parser.set_defaults(func=install_package)
 
     cl_args = parser.parse_args()
     if hasattr(cl_args, 'func'):
@@ -119,12 +124,18 @@ def add_mod_file(args):
 def build_package(args):
     pkg = get_package()
     pkg.build()
+    if pkg.built() and args.install:
+        pkg.install()
     if pkg.built() and args.upload:
         pkg.upload()
 
 def upload_package(args):
     pkg = get_package()
     pkg.upload()
+
+def install_package(args):
+    pkg = get_package()
+    pkg.install()
 
 def make(target, content):
     f = open(target, "w")

@@ -1,7 +1,7 @@
-import os, sys, json
+import os, sys, json, glob
 from shutil import copy2 as copy_file
 from .exceptions import AstroError, StructureError, UploadError, \
-    InvalidDistributionError, InvalidMetaError
+    InvalidDistributionError, InvalidMetaError, BuildError
 
 __version__ = "0.0.1"
 
@@ -86,6 +86,20 @@ class Package:
                 sys.stderr.write(err)
         else:
             print("Uploaded glia package", self)
+
+    def install(self):
+        import subprocess
+        print("Installing glia package", self)
+        cmnd = [sys.executable, "-m", "pip", "install", glob.glob(os.path.join("dist", "*{}*".format(self.version)))[0]]
+        process, out, err = execute_command(cmnd)
+        # Extra call to communicate required or subprocess freezes.
+        process.communicate()
+        self._installed = process.returncode == 0
+        if not self._installed:
+            raise BuildError("Could not install build:" + err)
+        else:
+            print("Installed glia package", self)
+            import glia
 
 def get_package(path=None):
     path = path or os.getcwd()

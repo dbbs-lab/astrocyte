@@ -4,6 +4,9 @@ class AstroError(Exception):
 class StructureError(AstroError):
     pass
 
+class BuildError(AstroError):
+    pass
+
 class UploadError(AstroError):
     pass
 
