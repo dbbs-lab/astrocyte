@@ -50,7 +50,7 @@ class Package:
             mod_name = '_glia__' + self.name + '__' + mod_name + '__0'
         if og_name != mod_name:
             print("Mod filename changed from '{}' to '{}'".format(og_name, mod_name))
-        import_mod_file(file, os.path.join(self.path, self.name, "mod", mod_name + ".mod"))
+        import_mod_file(file, os.path.join(self.path, self.name, "mod", mod_name + ".mod"), mod_name)
         mod = Mod(self, mod_name)
         print("__init__.py updated.")
 
@@ -66,6 +66,7 @@ class Package:
     def build(self):
         import subprocess
         print("Building glia package", self)
+        self.increment_version()
         rcode = subprocess.call([sys.executable, "setup.py", "bdist_wheel"])
         self._built = rcode == 0
         if self._built:
@@ -113,6 +114,14 @@ class Package:
         else:
             print("Installed glia package", self)
             import glia
+
+    def increment_version(self):
+        splits = self.version.split(".")
+        new_version = ".".join(splits[0:-1]) + "." + str(int(splits[-1]) + 1)
+        v = lambda v: "__version__ = \"{}\"".format(v)
+        with open(self.get_source_path("__init__.py"), "r") as file:
+            file.write(file.read().replace(v(self.version),v(new_version)))
+            self.version = v
 
 def get_package(path=None):
     path = path or os.getcwd()
@@ -221,14 +230,17 @@ class Writer:
         init_file.writelines(self.read)
         init_file.close()
 
-def import_mod_file(origin, destination):
+def import_mod_file(origin, destination, mod):
     with open(origin, "r") as f:
         lines = f.readlines()
-    for l in lines:
+    for i, l in enumerate(lines):
         # Remove all suffix definitions
         if l.lower().strip().startswith("suffix"):
             print("Removed HOC file suffix: ", l.strip()[6:])
             lines.remove(l)
+        if l.replace("{", "").lower().strip() == 'neuron':
+            print("Inserting suffix: ", mod)
+            lines.insert(i + 1, "SUFFIX " + mod)
     with open(destination, "w") as f:
         f.writelines(lines)
 
