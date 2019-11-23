@@ -233,6 +233,7 @@ class Writer:
 def import_mod_file(origin, destination, mod):
     with open(origin, "r") as f:
         lines = f.readlines()
+    inserts = []
     for i, l in enumerate(lines):
         # Remove all suffix definitions
         if l.lower().strip().startswith("suffix"):
@@ -240,7 +241,9 @@ def import_mod_file(origin, destination, mod):
             lines.remove(l)
         if l.replace("{", "").lower().strip() == 'neuron':
             print("Inserting suffix: ", mod)
-            lines.insert(i + 1, "SUFFIX " + mod)
+            inserts.append((i + 1, "SUFFIX " + mod + "\n"))
+    for i, l in enumerate(inserts):
+        lines.insert(i + l[0], l[1])
     with open(destination, "w") as f:
         f.writelines(lines)
 
