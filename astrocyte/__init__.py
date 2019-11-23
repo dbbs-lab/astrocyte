@@ -41,12 +41,13 @@ class Package:
             raise AstroError("This is not a mod file.")
         mod_name = os.path.splitext(os.path.basename(file))[0]
         og_name = mod_name
-        if not mod_name.startswith('_glia__'+self.name+'__'):
-            mod_name = '_glia__' + self.name + '__' + mod_name
-        if len(mod_name.split("__")) == 3:
-            mod_name = mod_name + '__0'
-        if len(mod_name.split("__")) != 4:
-            raise AstroError("Glia mod names cannot contain double underscores unless the filename follows the Glia naming convention.")
+        if mod_name.startswith('_glia__'):
+            if len(mod_name.split("__")) != 4:
+                raise AstroError("Mod files cannot contain double underscores unless the filename follows the Glia naming convention.")
+            pkg_name, asset, variant = parse_asset_name(mod_name)
+            mod_name = "_glia__{}__{}__{}".format(self.name, asset, variant)
+        else:
+            mod_name = '_glia__' + self.name + '__' + mod_name + '__0'
         if og_name != mod_name:
             print("Mod filename changed from '{}' to '{}'".format(og_name, mod_name))
         import_mod_file(file, os.path.join(self.path, self.name, "mod", mod_name + ".mod"))
@@ -93,7 +94,10 @@ class Package:
     def install(self):
         import subprocess, site
         site_packages = list(filter(lambda s: s.find("site-packages") != -1, site.getsitepackages()))
-        distfile = os.path.abspath(glob.glob(os.path.join("dist", "*{}*".format(self.version)))[0])
+        try:
+            distfile = os.path.abspath(glob.glob(os.path.join("dist", "*{}*".format(self.version)))[0])
+        except IndexError as _:
+            raise InvalidDistributionError("No build files for " + str(self) + ". Use `astro build`.")
         old_dir = os.getcwd()
         if len(site_packages) > 0:
             os.chdir(site_packages[0])
@@ -227,3 +231,9 @@ def import_mod_file(origin, destination):
             lines.remove(l)
     with open(destination, "w") as f:
         f.writelines(lines)
+
+def parse_asset_name(name):
+    splits = name.split("__")
+    if len(splits) != 4:
+        raise AstroError("Invalid mod name '{}'".format(name))
+    return tuple(splits[1:])

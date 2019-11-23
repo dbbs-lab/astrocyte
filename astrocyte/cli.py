@@ -149,5 +149,5 @@ def input_required(msg):
     return response
 
 if __name__ == "__main__":
-    print("Running astrocyte-cli script.")
+    print("Careful! Executing cli.py is unsupported.")
     astrocyte_cli()
