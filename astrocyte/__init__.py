@@ -18,6 +18,9 @@ def execute_command(cmnd):
         std_err_str += s
     return process, std_out_str, std_err_str
 
+def execute_python(script):
+    return execute_command([sys.executable, "-c" + script])
+
 class Package:
     def __init__(self, path, pkg_data):
         self.data = pkg_data
@@ -88,12 +91,18 @@ class Package:
             print("Uploaded glia package", self)
 
     def install(self):
-        import subprocess
+        import subprocess, site
+        site_packages = list(filter(lambda s: s.find("site-packages") != -1, site.getsitepackages()))
+        distfile = os.path.abspath(glob.glob(os.path.join("dist", "*{}*".format(self.version)))[0])
+        old_dir = os.getcwd()
+        if len(site_packages) > 0:
+            os.chdir(site_packages[0])
         print("Installing glia package", self)
-        cmnd = [sys.executable, "-m", "pip", "install", glob.glob(os.path.join("dist", "*{}*".format(self.version)))[0]]
+        cmnd = [sys.executable, "-m", "pip", "install", distfile]
         process, out, err = execute_command(cmnd)
         # Extra call to communicate required or subprocess freezes.
         process.communicate()
+        os.chdir(old_dir)
         self._installed = process.returncode == 0
         if not self._installed:
             raise BuildError("Could not install build:" + err)
