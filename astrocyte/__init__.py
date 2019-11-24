@@ -10,11 +10,11 @@ def execute_command(cmnd):
     process = subprocess.Popen(cmnd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     std_out_str, std_err_str = '', ''
     for c in iter(lambda: process.stdout.read(1), b''):
-        s = c.decode('UTF-8')
+        s = c.decode('UTF-8', 'ignore')
         sys.stdout.write(s)
         std_out_str += s
     for c in iter(lambda: process.stderr.read(1), b''):
-        s = c.decode('UTF-8')
+        s = c.decode('UTF-8', 'ignore')
         std_err_str += s
     return process, std_out_str, std_err_str
 
@@ -120,7 +120,9 @@ class Package:
         new_version = ".".join(splits[0:-1]) + "." + str(int(splits[-1]) + 1)
         v = lambda v: "__version__ = \"{}\"".format(v)
         with open(self.get_source_path("__init__.py"), "r") as file:
-            file.write(file.read().replace(v(self.version),v(new_version)))
+            content = file.read().replace(v(self.version),v(new_version))
+        with open(self.get_source_path("__init__.py"), "w") as file:
+            file.write(content)
             self.version = v
 
 def get_package(path=None):
