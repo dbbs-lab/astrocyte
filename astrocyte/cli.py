@@ -87,6 +87,7 @@ def astrocyte_cli():
 
 def create_package(args):
     folder = os.path.abspath(args.folder)
+    # Create root folder
     try:
         os.mkdir(folder)
     except FileExistsError as _:
@@ -116,6 +117,11 @@ def create_package(args):
     create_template("__init__.py", pkg_folder)                      # __init__.py
     os.mkdir(astro_folder)                                          # astro folder
     make(os.path.join(astro_folder, "pkg"), json.dumps(pkg_data))   # pkg json
+
+    # Hide .astro folder on Windows
+    if sys.platform == 'win32':
+        import ctypes
+        ctypes.windll.kernel32.SetFileAttributesW(astro_folder, 2)
 
     # Finish
     print("Package skeleton created.")
