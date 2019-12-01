@@ -61,6 +61,8 @@ def astrocyte_cli():
     add_subparsers = add_parser.add_subparsers()
     add_mod_parser = add_subparsers.add_parser("mod", aliases=('m'), description="Add a mod file to your package.")
     add_mod_parser.add_argument('file', action='store', help='Path of the mod file.')
+    add_mod_parser.add_argument('-n', '--name', action='store', help='Asset name of the mod file.')
+    add_mod_parser.add_argument('-v', '--variant', action='store', default='0', help='Variant name of the asset.')
     add_mod_parser.set_defaults(func=add_mod_file)
 
     # Build wheel
@@ -133,7 +135,8 @@ def create_package(args):
 
 def add_mod_file(args):
     pkg = get_package()
-    pkg.add_mod_file(args.file)
+    print(args.name, args.variant)
+    pkg.add_mod_file(args.file, name=args.name, variant=args.variant)
 
 def build_package(args):
     pkg = get_package()

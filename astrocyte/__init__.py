@@ -35,23 +35,26 @@ class Package:
     def __str__(self):
         return self.package_name + " v" + self.version
 
-    def add_mod_file(self, file):
+    def add_mod_file(self, file, name=None, variant='0'):
         if not os.path.exists(file):
             raise AstroError("Mod file not found.")
         extension = os.path.splitext(file)[1]
         if extension != ".mod":
             raise AstroError("This is not a mod file.")
-        mod_name = os.path.splitext(os.path.basename(file))[0]
-        og_name = mod_name
-        if mod_name.startswith('glia__'):
-            if len(mod_name.split("__")) != 4:
-                raise AstroError("Mod files cannot contain double underscores unless the filename follows the Glia naming convention.")
-            pkg_name, asset, variant = parse_asset_name(mod_name)
-            mod_name = "glia__{}__{}__{}".format(self.name, asset, variant)
+        if name is not None:
+            mod_name = 'glia__' + self.name + '__' + name + '__' + variant
         else:
-            mod_name = 'glia__' + self.name + '__' + mod_name + '__0'
-        if og_name != mod_name:
-            print("Mod filename changed from '{}' to '{}'".format(og_name, mod_name))
+            mod_name = os.path.splitext(os.path.basename(file))[0]
+            og_name = mod_name
+            if mod_name.startswith('glia__'):
+                if len(mod_name.split("__")) != 4:
+                    raise AstroError("Mod files cannot contain double underscores unless the filename follows the Glia naming convention.")
+                pkg_name, asset, variant = parse_asset_name(mod_name)
+                mod_name = "glia__{}__{}__{}".format(self.name, asset, variant)
+            else:
+                mod_name = 'glia__' + self.name + '__' + mod_name + '__' + variant
+            if og_name != mod_name:
+                print("Mod filename changed from '{}' to '{}'".format(og_name, mod_name))
         import_mod_file(file, os.path.join(self.path, self.name, "mod", mod_name + ".mod"), mod_name)
         mod = Mod(self, mod_name)
         print("__init__.py updated.")
