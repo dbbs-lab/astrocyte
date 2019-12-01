@@ -23,13 +23,14 @@ def execute_python(script):
 
 class Package:
     def __init__(self, path, pkg_data):
-        from git import Repo
+        from git import Repo, Actor
         self.repo = Repo(path)
         self.data = pkg_data
         self.package_name = pkg_data["pkg_name"]
         self.name = pkg_data["name"]
         self.astro_version = pkg_data["astro_version"]
         self.glia_version = pkg_data["glia_version"]
+        self.author = Actor(pkg_data["author"], pkg_data["email"])
         self.set_path(path)
 
     def __str__(self):
@@ -57,7 +58,13 @@ class Package:
                 print("Mod filename changed from '{}' to '{}'".format(og_name, mod_name))
         import_mod_file(file, os.path.join(self.path, self.name, "mod", mod_name + ".mod"), mod_name)
         mod = Mod(self, mod_name)
-        print("__init__.py updated.")
+        # Add modified files to commit
+        self.repo.git.add(update=True)
+        index = self.repo.index
+        # Add new files to commit
+        index.add(self.repo.untracked_files)
+        # Make commit
+        index.commit("Added " + mod_name, author=self.author, committer=self.author)
 
     def set_path(self, path):
         self.path = path
