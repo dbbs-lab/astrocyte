@@ -91,6 +91,9 @@ def create_package(args):
         os.mkdir(folder)
     except FileExistsError as _:
         raise AstroError("Target location already exists.") from None
+    # Initialize git repo.
+    from git import Repo
+    repo = Repo.init(folder)
     # Ask package information
     pkg_data = {
         "pkg_name": args.folder,

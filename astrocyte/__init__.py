@@ -23,6 +23,8 @@ def execute_python(script):
 
 class Package:
     def __init__(self, path, pkg_data):
+        from git import Repo
+        self.repo = Repo(path)
         self.data = pkg_data
         self.package_name = pkg_data["pkg_name"]
         self.name = pkg_data["name"]
