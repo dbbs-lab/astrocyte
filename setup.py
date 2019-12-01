@@ -31,7 +31,8 @@ setuptools.setup(
         ]
      },
      install_requires=[
-        "nrn-glia>=0.0.1",
+        "nrn-glia>=0.1.1",
+        "setuptools",
         "gitpython>=3.0.0"
      ]
  )

@@ -3,18 +3,18 @@ from shutil import copy2 as copy_file
 from .exceptions import AstroError, StructureError, UploadError, \
     InvalidDistributionError, InvalidMetaError, BuildError
 
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 
 def execute_command(cmnd):
     import subprocess
     process = subprocess.Popen(cmnd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     std_out_str, std_err_str = '', ''
     for c in iter(lambda: process.stdout.read(1), b''):
-        s = c.decode('UTF-8')
+        s = c.decode('UTF-8', 'ignore')
         sys.stdout.write(s)
         std_out_str += s
     for c in iter(lambda: process.stderr.read(1), b''):
-        s = c.decode('UTF-8')
+        s = c.decode('UTF-8', 'ignore')
         std_err_str += s
     return process, std_out_str, std_err_str
 
@@ -43,13 +43,13 @@ class Package:
             raise AstroError("This is not a mod file.")
         mod_name = os.path.splitext(os.path.basename(file))[0]
         og_name = mod_name
-        if mod_name.startswith('_glia__'):
+        if mod_name.startswith('glia__'):
             if len(mod_name.split("__")) != 4:
                 raise AstroError("Mod files cannot contain double underscores unless the filename follows the Glia naming convention.")
             pkg_name, asset, variant = parse_asset_name(mod_name)
-            mod_name = "_glia__{}__{}__{}".format(self.name, asset, variant)
+            mod_name = "glia__{}__{}__{}".format(self.name, asset, variant)
         else:
-            mod_name = '_glia__' + self.name + '__' + mod_name + '__0'
+            mod_name = 'glia__' + self.name + '__' + mod_name + '__0'
         if og_name != mod_name:
             print("Mod filename changed from '{}' to '{}'".format(og_name, mod_name))
         import_mod_file(file, os.path.join(self.path, self.name, "mod", mod_name + ".mod"), mod_name)
@@ -122,7 +122,9 @@ class Package:
         new_version = ".".join(splits[0:-1]) + "." + str(int(splits[-1]) + 1)
         v = lambda v: "__version__ = \"{}\"".format(v)
         with open(self.get_source_path("__init__.py"), "r") as file:
-            file.write(file.read().replace(v(self.version),v(new_version)))
+            content = file.read().replace(v(self.version),v(new_version))
+        with open(self.get_source_path("__init__.py"), "w") as file:
+            file.write(content)
             self.version = v
 
 def get_package(path=None):
@@ -154,7 +156,7 @@ class Mod:
 
 def get_glia_version():
     # TODO: Use pip to find the installed glia version.
-    return "0.0.1"
+    return "0.1.1"
 
 def get_minimum_glia_version():
     # TODO: Use pip to find the installed glia version and determine major version

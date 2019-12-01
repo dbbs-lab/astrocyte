@@ -114,7 +114,7 @@ def create_package(args):
     create_template(".gitignore", folder)                           # .gitignore
     os.mkdir(pkg_folder)                                            # package folder
     os.mkdir(mod_folder)                                            # mod folder
-    create_template("__init__.py", pkg_folder)                      # __init__.py
+    create_template("__init__.py", pkg_folder, locals=pkg_data)     # __init__.py
     os.mkdir(astro_folder)                                          # astro folder
     make(os.path.join(astro_folder, "pkg"), json.dumps(pkg_data))   # pkg json
 
