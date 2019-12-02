@@ -1,4 +1,4 @@
-import os, sys, json, glob
+import os, sys, json, glob, re, fnmatch
 from shutil import copy2 as copy_file
 from .exceptions import AstroError, StructureError, UploadError, \
     InvalidDistributionError, InvalidMetaError, BuildError
@@ -45,7 +45,7 @@ class Package:
         if name is not None:
             mod_name = 'glia__' + self.name + '__' + name + '__' + variant
         else:
-            mod_name = os.path.splitext(os.path.basename(file))[0]
+            mod_name = get_path_mod_name(file)
             og_name = mod_name
             if mod_name.startswith('glia__'):
                 if len(mod_name.split("__")) != 4:
@@ -58,13 +58,16 @@ class Package:
                 print("Mod filename changed from '{}' to '{}'".format(og_name, mod_name))
         import_mod_file(file, os.path.join(self.path, self.name, "mod", mod_name + ".mod"), mod_name)
         mod = Mod(self, mod_name)
-        # Add modified files to commit
-        self.repo.git.add(update=True)
-        index = self.repo.index
-        # Add new files to commit
-        index.add(self.repo.untracked_files)
-        # Make commit
-        index.commit("Added " + mod_name, author=self.author, committer=self.author)
+        self.commit("Added " + mod_name)
+
+    def edit_asset(self, mod_part, name=None, variant=None):
+        candidates = list(map(lambda x: get_path_mod_name(x), find_files(self.get_mod_path("*" + mod_part + "*"))))
+        if len(candidates) == 0:
+            raise AstroError("No assets found matching '{}'".format(mod_part))
+        elif len(candidates) > 1:
+            raise AstroError("Multiple matches found for '{}'".format(mod_part) + "\n" + "\n".join(candidates))
+        mod = Mod(self, candidates[0])
+        mod.set_names(name=name, variant=variant)
 
     def set_path(self, path):
         self.path = path
@@ -75,10 +78,14 @@ class Package:
     def get_source_path(self, *args):
         return os.path.join(self.path, self.name, *args)
 
+    def get_mod_path(self, *args):
+        return self.get_source_path("mod", *args)
+
     def build(self):
         import subprocess
         print("Building glia package", self)
         self.increment_version()
+        self.commit("New build, incremented version")
         rcode = subprocess.call([sys.executable, "setup.py", "bdist_wheel"])
         self._built = rcode == 0
         if self._built:
@@ -107,15 +114,32 @@ class Package:
     def install(self):
         import subprocess, site
         site_packages = list(filter(lambda s: s.find("site-packages") != -1, site.getsitepackages()))
-        try:
-            distfile = os.path.abspath(glob.glob(os.path.join("dist", "*{}*".format(self.version)))[0])
-        except IndexError as _:
-            raise InvalidDistributionError("No build files for " + str(self) + ". Use `astro build`.")
+        distfile = self.get_distribution()
         old_dir = os.getcwd()
         if len(site_packages) > 0:
             os.chdir(site_packages[0])
         print("Installing glia package", self)
         cmnd = [sys.executable, "-m", "pip", "install", distfile]
+        process, out, err = execute_command(cmnd)
+        # Extra call to communicate required or subprocess freezes.
+        process.communicate()
+        os.chdir(old_dir)
+        self._installed = process.returncode == 0
+        if not self._installed:
+            raise BuildError("Could not install build:" + err)
+        else:
+            print("Installed glia package", self)
+            import glia
+
+    def uninstall(self):
+        import subprocess, site
+        site_packages = list(filter(lambda s: s.find("site-packages") != -1, site.getsitepackages()))
+        distfile = self.get_distribution()
+        old_dir = os.getcwd()
+        if len(site_packages) > 0:
+            os.chdir(site_packages[0])
+        print("Uninstalling glia package", self)
+        cmnd = [sys.executable, "-m", "pip", "uninstall", distfile]
         process, out, err = execute_command(cmnd)
         # Extra call to communicate required or subprocess freezes.
         process.communicate()
@@ -136,6 +160,21 @@ class Package:
         with open(self.get_source_path("__init__.py"), "w") as file:
             file.write(content)
             self.version = v
+
+    def commit(self, message):
+        # Add modified files to commit
+        self.repo.git.add(update=True)
+        index = self.repo.index
+        # Add new files to commit
+        index.add(self.repo.untracked_files)
+        # Make commit
+        index.commit(message, author=self.author, committer=self.author)
+
+    def get_distribution(self):
+        try:
+            return os.path.abspath(glob.glob(os.path.join("dist", "*{}*".format(self.version)))[0])
+        except IndexError as _:
+            raise InvalidDistributionError("No build files for " + str(self) + ". Use `astro build`.")
 
 def get_package(path=None):
     path = path or os.getcwd()
@@ -159,10 +198,43 @@ class Mod:
         self.writer.update()
 
     def get_full_name(self):
-        return "{}__{}__{}".format(self.namespace, self.asset_name, self.variant)
+        return get_asset_name(self.namespace, self.asset_name, self.variant)
 
     def get_writername(self):
-        return "mod" + self.get_full_name()
+        return "mod_" + self.get_full_name()
+
+    def set_names(self, name=None, variant=None):
+        old_asset_name = self.asset_name
+        old_variant = self.variant
+        new_asset_name = name or self.asset_name
+        new_variant = variant or self.variant
+        old_name = self.get_full_name()
+        new_name = get_asset_name(self.namespace, new_asset_name, new_variant)
+        os.rename(self.pkg.get_mod_path(old_name) + ".mod", self.pkg.get_mod_path(new_name) + ".mod")
+        self.writer.replace(old_name, new_name)
+        self.asset_name = new_asset_name
+        self.variant = new_variant
+        self.writer.update()
+        self.sanitize_mod_file()
+        self.pkg.commit("Renamed {} to {}".format(old_asset_name + "." + old_variant, new_asset_name + "." + new_variant))
+
+    def get_mod_file(self):
+        return self.pkg.get_mod_path(self.get_full_name()) + ".mod"
+
+    def sanitize_mod_file(self):
+        with open(self.get_mod_file(), "r") as f:
+            lines = f.readlines()
+        inserts = []
+        for i, l in enumerate(lines):
+            # Remove all suffix definitions
+            if l.lower().strip().startswith("suffix"):
+                lines.remove(l)
+            if l.replace("{", "").lower().strip() == 'neuron':
+                inserts.append((i + 1, "SUFFIX " + self.get_full_name() + "\n"))
+        for i, l in enumerate(inserts):
+            lines.insert(i + l[0], l[1])
+        with open(self.get_mod_file(), "w") as f:
+            f.writelines(lines)
 
 def get_glia_version():
     # TODO: Use pip to find the installed glia version.
@@ -187,16 +259,66 @@ class Writer:
         init_file.close()
         if not self.in_it():
             self.insert()
+        else:
+            content, roi = self.read_block()
+            fresh = {}
+            for k, v in self.obj.__dict__.items():
+                if not k in self.__class__.exclude:
+                    line = self.property_line(k, v, self.indent)
+                    if k in content:
+                        # Replace existing content line, mark it as used
+                        self.read[content[k][0]] = line
+                        fresh[k] = True
+                    else:
+                        # Add a new content line before the end
+                        self.read[(roi[1]-2):(roi[1]-2)] = [line]
+                        roi = tuple([roi[0], roi[1] + 1])
+            for key, line in sorted(content.items(), key=lambda x: x[1][0], reverse=True):
+                if not key in fresh:
+                    del self.read[line[0]]
+            self.write()
 
     def in_it(self):
+        return self.find_tagline() > -1
+
+    def find_tagline(self, find_end=False):
         tagline = self.get_tagline()
-        return any(map(lambda l: l.strip() == tagline, self.read))
+        endline = self.get_endline()
+        start = -1
+        for i, l in enumerate(self.read):
+            if l.strip() == tagline:
+                self.indent = len(l) - len(l.lstrip(' '))
+                if not find_end:
+                    return i
+                else:
+                    start = i
+            if start != -1 and l.strip() == endline:
+                return start, i
+        return -1
+
+    def read_block(self):
+        start_i, end_i = self.find_tagline(find_end=True)
+        roi = range(start_i, end_i)
+        values = {}
+        for i in roi:
+            line = self.read[i].strip()
+            if line.startswith("#") or line.startswith("pkg") or line.endswith("= Mod()") or line.endswith("= pkg"):
+                continue
+            assignee, evaluee = tuple(line.split("="))
+            evaluee = eval(evaluee)
+            assignee = ".".join(assignee.split(".")[1:]).strip()
+            values[assignee] = (i, evaluee)
+        return values, (start_i, end_i)
 
     def get_tagline(self):
         return "#-" + self.obj.get_writername()
 
+    def get_endline(self):
+        return '#-##'
+
     def insert(self):
         i, indent = self.find_line("return pkg", return_indent=True)
+        self.indent = indent
         self.read[i:i] = self.footer(indent)
         self.read[i:i] = self.content(indent)
         self.read[i:i] = self.header(indent)
@@ -244,6 +366,14 @@ class Writer:
         init_file.writelines(self.read)
         init_file.close()
 
+    def replace(self, old, new):
+        init_file = open(self.get_init_path(), "r")
+        content = init_file.read()
+        init_file.close()
+        init_file = open(self.get_init_path(), "w")
+        init_file.write(content.replace(old, new))
+        init_file.close()
+
 def import_mod_file(origin, destination, mod):
     with open(origin, "r") as f:
         lines = f.readlines()
@@ -266,3 +396,17 @@ def parse_asset_name(name):
     if len(splits) != 4:
         raise AstroError("Invalid mod name '{}'".format(name))
     return tuple(splits[1:])
+
+def get_asset_name(namespace, name, variant='0'):
+    return "{}__{}__{}".format(namespace, name, variant)
+
+def get_path_mod_name(path):
+    return os.path.splitext(os.path.basename(path))[0]
+
+def find_files(path_pattern):
+    pths = glob.glob(path_pattern)
+
+    match = re.compile(fnmatch.translate(path_pattern)).match
+    valid_pths = [pth for pth in pths if match(pth)]
+
+    return valid_pths
