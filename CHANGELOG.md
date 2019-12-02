@@ -1,5 +1,10 @@
 # Version 0
 
+## 0.0.5
+
+* You can edit the name and variant of existing assets.
+* You can use `astro uninstall` to uninstall the current built distribution.
+
 ## 0.0.4
 
 * You can specify an asset name and variant name when adding mod files.

@@ -3,7 +3,7 @@ from shutil import copy2 as copy_file
 from .exceptions import AstroError, StructureError, UploadError, \
     InvalidDistributionError, InvalidMetaError, BuildError
 
-__version__ = "0.0.4"
+__version__ = "0.0.5"
 
 def execute_command(cmnd):
     import subprocess
