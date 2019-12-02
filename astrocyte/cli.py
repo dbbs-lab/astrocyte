@@ -86,6 +86,10 @@ def astrocyte_cli():
     wheel_parser = subparsers.add_parser("install", description="Install current wheel.")
     wheel_parser.set_defaults(func=install_package)
 
+    # Uninstall wheel
+    unwheel_parser = subparsers.add_parser("uninstall", description="Uninstall current wheel.")
+    unwheel_parser.set_defaults(func=uninstall_package)
+
     cl_args = parser.parse_args()
     if hasattr(cl_args, 'func'):
         try:
@@ -163,6 +167,10 @@ def upload_package(args):
 def install_package(args):
     pkg = get_package()
     pkg.install()
+
+def uninstall_package(args):
+    pkg = get_package()
+    pkg.uninstall()
 
 def make(target, content):
     f = open(target, "w")

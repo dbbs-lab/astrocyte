@@ -139,7 +139,7 @@ class Package:
         if len(site_packages) > 0:
             os.chdir(site_packages[0])
         print("Uninstalling glia package", self)
-        cmnd = [sys.executable, "-m", "pip", "uninstall", distfile]
+        cmnd = [sys.executable, "-m", "pip", "uninstall", "-y", distfile]
         process, out, err = execute_command(cmnd)
         # Extra call to communicate required or subprocess freezes.
         process.communicate()
@@ -148,7 +148,7 @@ class Package:
         if not self._installed:
             raise BuildError("Could not install build:" + err)
         else:
-            print("Installed glia package", self)
+            print("Uninstalled glia package", self)
             import glia
 
     def increment_version(self):
