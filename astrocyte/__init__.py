@@ -3,7 +3,7 @@ from shutil import copy2 as copy_file
 from .exceptions import AstroError, StructureError, UploadError, \
     InvalidDistributionError, InvalidMetaError, BuildError
 
-__version__ = "0.0.5"
+__version__ = "0.0.6"
 
 def execute_command(cmnd):
     import subprocess
@@ -56,9 +56,15 @@ class Package:
                 mod_name = 'glia__' + self.name + '__' + mod_name + '__' + variant
             if og_name != mod_name:
                 print("Mod filename changed from '{}' to '{}'".format(og_name, mod_name))
-        import_mod_file(file, os.path.join(self.path, self.name, "mod", mod_name + ".mod"), mod_name)
-        mod = Mod(self, mod_name)
+        self.import_mod_file(file, os.path.join(self.path, self.name, "mod", mod_name + ".mod"), mod_name)
         self.commit("Added " + mod_name)
+
+    def import_mod_file(self, origin, destination, name):
+        from shutil import copy2
+        copy2(origin, destination)
+        mod = Mod(self, name)
+        mod.sanitize_mod_file()
+        return mod
 
     def edit_asset(self, mod_part, name=None, variant=None):
         candidates = list(map(lambda x: get_path_mod_name(x), find_files(self.get_mod_path("*" + mod_part + "*"))))
@@ -194,6 +200,7 @@ class Mod:
         self.asset_name = "__".join(splits[2:-1])
         self.variant = splits[-1]
         self.namespace = "__".join(splits[:2])
+        self._is_point_process = self.is_point_process()
         self.writer = Writer(self)
         self.writer.update()
 
@@ -204,6 +211,9 @@ class Mod:
         return "mod_" + self.get_full_name()
 
     def set_names(self, name=None, variant=None):
+        '''
+            Change this Mod's names. Updates the mod file and __init__.py
+        '''
         old_asset_name = self.asset_name
         old_variant = self.variant
         new_asset_name = name or self.asset_name
@@ -219,22 +229,46 @@ class Mod:
         self.pkg.commit("Renamed {} to {}".format(old_asset_name + "." + old_variant, new_asset_name + "." + new_variant))
 
     def get_mod_file(self):
+        '''
+            Return the full filename of the mod file.
+        '''
         return self.pkg.get_mod_path(self.get_full_name()) + ".mod"
 
     def sanitize_mod_file(self):
+        # Read the mod file.
         with open(self.get_mod_file(), "r") as f:
             lines = f.readlines()
         inserts = []
+        # Define the statement that needs to be replaced with the new name
+        # For a mechanism that's "SUFFIX <name>"
+        # For a point_process it's "POINT_PROCESS <name>"
+        if not self.is_point_process:
+            name_statement = "SUFFIX"
+        else:
+            name_statement = "POINT_PROCESS"
+        # Iterate over all lines to find name statements and the correct position
+        # to insert our new name statement (as the first line of the NEURON block)
         for i, l in enumerate(lines):
-            # Remove all suffix definitions
-            if l.lower().strip().startswith("suffix"):
+            # Remove all previous name statements
+            if l.lower().strip().startswith(name_statement.lower()):
                 lines.remove(l)
             if l.replace("{", "").lower().strip() == 'neuron':
-                inserts.append((i + 1, "SUFFIX " + self.get_full_name() + "\n"))
+                # Add the name statement to be inserted.
+                inserts.append((i + 1, name_statement + " " + self.get_full_name() + "\n"))
+        # Inser the new statements
         for i, l in enumerate(inserts):
             lines.insert(i + l[0], l[1])
+        # Write the new mod file.
         with open(self.get_mod_file(), "w") as f:
             f.writelines(lines)
+
+    def is_point_process(self):
+        with open(self.get_mod_file(), "r") as f:
+            lines = f.readlines()
+        for line in lines:
+            if line.strip().lower().startswith("point_process"):
+                return True
+        return False
 
 def get_glia_version():
     # TODO: Use pip to find the installed glia version.
@@ -246,6 +280,7 @@ def get_minimum_glia_version():
 
 class Writer:
     exclude = ['pkg', 'writer']
+    repr_types = [int, bool, str]
 
     def __init__(self, obj):
         self.obj = obj
@@ -348,8 +383,8 @@ class Writer:
         return (" " * indent) + msg + "\n"
 
     def property_line(self, k, v, indent):
-        if isinstance(v, str):
-            return self.line(self.obj.get_writername() + ".{} = '{}'".format(k, v), indent)
+        if type(v) in self.__class__.repr_types:
+            return self.line(self.obj.get_writername() + ".{} = {}".format(k, repr(v)), indent)
         raise Exception("Unknown property type {} for {}".format(type(v).__name__, k))
 
     def find_line(self, line, return_indent=False):
@@ -373,23 +408,6 @@ class Writer:
         init_file = open(self.get_init_path(), "w")
         init_file.write(content.replace(old, new))
         init_file.close()
-
-def import_mod_file(origin, destination, mod):
-    with open(origin, "r") as f:
-        lines = f.readlines()
-    inserts = []
-    for i, l in enumerate(lines):
-        # Remove all suffix definitions
-        if l.lower().strip().startswith("suffix"):
-            print("Removed HOC file suffix: ", l.strip()[6:])
-            lines.remove(l)
-        if l.replace("{", "").lower().strip() == 'neuron':
-            print("Inserting suffix: ", mod)
-            inserts.append((i + 1, "SUFFIX " + mod + "\n"))
-    for i, l in enumerate(inserts):
-        lines.insert(i + l[0], l[1])
-    with open(destination, "w") as f:
-        f.writelines(lines)
 
 def parse_asset_name(name):
     splits = name.split("__")

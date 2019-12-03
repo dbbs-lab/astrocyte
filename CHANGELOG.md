@@ -1,9 +1,13 @@
 # Version 0
 
+## 0.0.6
+
+* You can import `point_process`es using `astro add mod`.
+
 ## 0.0.5
 
 * You can edit the name and variant of existing assets.
-* You can use `astro uninstall` to uninstall the current built distribution.
+* You can use `astro uninstall` to uninstall the currently built distribution.
 
 ## 0.0.4
 
