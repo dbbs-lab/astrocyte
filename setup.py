@@ -31,8 +31,11 @@ setuptools.setup(
         ]
      },
      install_requires=[
-        "nrn-glia>=0.1.1",
+        "nrn-glia>=0.1.8",
         "setuptools",
-        "gitpython>=3.0.0"
+        "gitpython>=3.0.0",
+        "twine>=3.0.0",
+        "requests",
+        "appdirs>=1.4.3"
      ]
  )

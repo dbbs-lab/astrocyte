@@ -15,3 +15,6 @@ class InvalidDistributionError(UploadError):
 
 class InvalidMetaError(UploadError):
     pass
+
+class GliaApiError(UploadError):
+    pass

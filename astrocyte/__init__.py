@@ -1,9 +1,9 @@
 import os, sys, json, glob, re, fnmatch
 from shutil import copy2 as copy_file
-from .exceptions import AstroError, StructureError, UploadError, \
-    InvalidDistributionError, InvalidMetaError, BuildError
+from .exceptions import *
+from . import api
 
-__version__ = "0.0.6"
+__version__ = "0.1.0"
 
 def execute_command(cmnd):
     import subprocess
@@ -103,8 +103,16 @@ class Package:
     def upload(self):
         import subprocess
         print("Uploading glia package", self)
-        cmnd = ["twine", "upload", os.path.join("dist", "*{}*".format(self.version))]
+        api.upload_meta(self)
+        cmnd = ["twine", "upload",
+            "--username=_",
+            "--password=" + api.get_valid_token(),
+            "--disable-progress-bar",
+            "--repository-url=" + api.__repo_url__,
+            os.path.join("dist", "*{}*".format(self.version))
+        ]
         process, out, err = execute_command(cmnd)
+        process.communicate()
         self._uploaded = process.returncode == 0
         if not self._uploaded:
             if err.find("InvalidDistributionError") != -1:

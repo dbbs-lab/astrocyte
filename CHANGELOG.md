@@ -1,3 +1,9 @@
+# Version 0.1
+
+* Astro can authenticate you with the package repository and stores the
+  authentication token.
+* Astro will upload metadata to the package repository when using `astro upload`.
+
 # Version 0
 
 ## 0.0.6
