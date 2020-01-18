@@ -3,7 +3,7 @@ from shutil import copy2 as copy_file
 from .exceptions import *
 from . import api
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 def execute_command(cmnd):
     import subprocess

@@ -1,5 +1,11 @@
 # Version 0.1
 
+## 0.1.1
+
+* Fixed a bug that always added a POINT_PROCESS statement when adding mod files.
+
+## 0.1.0
+
 * Astro can authenticate you with the package repository and stores the
   authentication token.
 * Astro will upload metadata to the package repository when using `astro upload`.
