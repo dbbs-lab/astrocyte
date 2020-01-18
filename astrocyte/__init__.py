@@ -250,7 +250,7 @@ class Mod:
         # Define the statement that needs to be replaced with the new name
         # For a mechanism that's "SUFFIX <name>"
         # For a point_process it's "POINT_PROCESS <name>"
-        if not self.is_point_process:
+        if not self._is_point_process:
             name_statement = "SUFFIX"
         else:
             name_statement = "POINT_PROCESS"
