@@ -2,11 +2,11 @@ import os, sys, argparse, json
 from shutil import copy2 as copy_file
 try:
     from .templates import create_template
-    from . import Package, get_package, get_glia_version, __version__
+    from . import Package, get_package, load_local_pkg, get_glia_version, __version__
     from .exceptions import AstroError
 except ModuleNotFoundError as _:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-    from astrocyte import Package, get_package, get_glia_version, __version__
+    from astrocyte import Package, load_local_pkg, get_package, get_glia_version, __version__
     from astrocyte.templates import create_template
     from astrocyte.exceptions import AstroError
 
