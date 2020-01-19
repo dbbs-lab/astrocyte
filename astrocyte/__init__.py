@@ -92,10 +92,15 @@ class Package:
 
     def build(self):
         import subprocess
-        print("Building glia package", self)
+        from time import sleep
+        cwd = os.getcwd()
+        os.chdir(self.path)
         self.increment_version()
+        sleep(0.5)
+        print("Building glia package", self)
         self.commit("New build, incremented version")
         rcode = subprocess.call([sys.executable, "setup.py", "bdist_wheel"])
+        os.chdir(cwd)
         self._built = rcode == 0
         if self._built:
             print("Glia package built.")
