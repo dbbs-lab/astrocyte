@@ -1,3 +1,9 @@
+# Version 0.2
+
+* Added the `add mod --local`: Installs mod files locally for use on the local machine.
+* Fixed various bugs that occured when using Astrocyte in another folder than the current
+  working directory.
+
 # Version 0.1
 
 ## 0.1.1
