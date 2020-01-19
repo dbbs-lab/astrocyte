@@ -250,17 +250,18 @@ def remove_mod_file(args):
     pkg = _get_pkg(args)
     candidates = pkg.get_mod_candidates(args.name)
     if not candidates:
-        raise AstroError("No assets found matching '{}'".format(mod_part))
+        raise AstroError("No assets found matching '{}'".format(args.name))
     message = (
         str(len(candidates))
         + " mod files found:\n"
         + "\n".join(candidates)
-        + "\nAre you sure you want to remove the above mod files [y/n]?\n"
+        + "\nAre you sure you want to remove the above mod files [y/n]? "
     )
     if not args.force and input(message) != "y":
         return
     for candidate in candidates:
         pkg.remove_mod_file(candidate)
+    pkg.commit("Removed " + ", ".join(candidates))
 
 
 def edit_mod_file(args):

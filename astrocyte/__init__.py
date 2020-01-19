@@ -91,13 +91,13 @@ class Package:
         mod.delete()
 
     def set_path(self, path):
-        self.path = path
+        self.path = os.path.abspath(path)
         sys.path.insert(0, self.path)
         self.version = __import__(self.name).__version__
         sys.path.remove(self.path)
 
     def get_source_path(self, *args):
-        return os.path.join(self.path, self.name, *args)
+        return os.path.join(os.path.abspath(self.path), self.name, *args)
 
     def get_mod_path(self, *args):
         return self.get_source_path("mod", *args)
@@ -287,7 +287,7 @@ class Mod:
 
     def delete(self):
         self.writer.remove()
-        os.path.remove(self.get_mod_file())
+        os.remove(self.get_mod_file())
 
     def get_full_name(self):
         return get_asset_name(self.namespace, self.asset_name, self.variant)
@@ -466,9 +466,7 @@ class Writer:
 
     def remove(self):
         start_line, end_line = self.find_tagline(find_end=True)
-        print("before", len(self.read))
-        del self.read[start_line:end_line]
-        print("after", len(self.read))
+        del self.read[(start_line - 1) : (end_line + 1)]
         self.write()
         self.removed = True
 
