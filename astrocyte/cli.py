@@ -105,6 +105,9 @@ def astrocyte_cli():
     )
     edit_parser.add_argument("-n", "--name", action="store", help="New asset name.")
     edit_parser.add_argument("-v", "--variant", action="store", help="New variant name.")
+    edit_parser.add_argument(
+        "-l", "--local", action="store_true", help="Edit a local asset."
+    )
     edit_parser.set_defaults(func=edit_mod_file)
 
     # Build wheel
@@ -122,20 +125,22 @@ def astrocyte_cli():
     wheel_parser.set_defaults(func=build_package)
 
     # Upload wheel
-    wheel_parser = subparsers.add_parser(
+    upload_parser = subparsers.add_parser(
         "upload", description="Upload current wheel to PyPI."
     )
-    wheel_parser.set_defaults(func=upload_package)
+    upload_parser.set_defaults(func=upload_package)
 
     # Install wheel
-    wheel_parser = subparsers.add_parser("install", description="Install current wheel.")
-    wheel_parser.set_defaults(func=install_package)
+    install_parser = subparsers.add_parser(
+        "install", description="Install current wheel."
+    )
+    install_parser.set_defaults(func=install_package)
 
     # Uninstall wheel
-    unwheel_parser = subparsers.add_parser(
+    uninstall_parser = subparsers.add_parser(
         "uninstall", description="Uninstall current wheel."
     )
-    unwheel_parser.set_defaults(func=uninstall_package)
+    uninstall_parser.set_defaults(func=uninstall_package)
 
     cl_args = parser.parse_args()
     if hasattr(cl_args, "func"):
