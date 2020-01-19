@@ -29,6 +29,10 @@ jobs:
         wget https://neuron.yale.edu/ftp/neuron/versions/v7.7/nrn-7.7.x86_64-linux.deb
         sudo dpkg -i nrn-7.7.x86_64-linux.deb
         export PYTHONPATH=/usr/local/nrn/lib/python
+        python -c "help('modules')"
+        echo "PYTHONPATH=$PYTHONPATH"
+        echo "/usr/local/nrn contains:"
+        ls /usr/local/nrn
     - name: Collect MOD files
       run: |
         mkdir tests/mod
