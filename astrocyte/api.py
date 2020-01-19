@@ -10,11 +10,13 @@ __url__ = "https://api.glia-pkg.org/"
 class Credentials:
     user = None
     password = None
+    remember = None
 
 
-def set_credentials(user, password):
+def set_credentials(user, password, remember=False):
     Credentials.user = user
     Credentials.password = password
+    Credentials.remember = remember
 
 
 def upload_meta(pkg):
@@ -108,7 +110,11 @@ def get_valid_token():
 def _prompt_authentication():
     username = Credentials.user or input("Username: ")
     password = Credentials.password or getpass.getpass()
-    remember_me = input("Stay logged in (y/n)? ").lower() == "y"
+    remember_me = (
+        input("Stay logged in (y/n)? ").lower() == "y"
+        if Credentials.remember is None
+        else Credentials.remember
+    )
     response = requests.get(
         __url__ + "/token", auth=(username, password), params={"remember_me": remember_me}
     )

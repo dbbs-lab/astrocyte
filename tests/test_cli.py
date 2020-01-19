@@ -59,4 +59,5 @@ class TestCLI(unittest.TestCase):
             + os.getenv("API_USERNAME")
             + " --password="
             + os.getenv("API_PASSWORD")
+            + " --forget"
         )
