@@ -1,9 +1,8 @@
-from appdirs import AppDirs
 import requests
 import os, json, getpass, time
 from .exceptions import *
+from . import app_directories
 
-directories = AppDirs("Astrocyte", "Alexandria")
 __repo_url__ = "https://pi.glia-pkg.org/"
 __url__ = "https://api.glia-pkg.org/"
 
