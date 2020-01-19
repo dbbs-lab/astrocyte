@@ -6,6 +6,22 @@ print("Packaging astrocyte version", astrocyte.__version__)
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+
+if not os.getenv("RTD_BUILD"):
+    data_files = {
+        "include_package_data": True,
+        "data_files": [
+            (
+                "templates",
+                glob.glob(
+                    os.path.join(os.path.dirname(__file__), "astrocyte", "templates", "*")
+                ),
+            )
+        ],
+    }
+else:
+    data_files = {}
+
 setuptools.setup(
     name="astrocyte",
     version=astrocyte.__version__,
@@ -21,15 +37,7 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
     ],
-    include_package_data=True,
-    data_files=[
-        (
-            "templates",
-            glob.glob(
-                os.path.join(os.path.dirname(__file__), "astrocyte", "templates", "*")
-            ),
-        )
-    ],
+    **data_files,
     entry_points={"console_scripts": ["astro = astrocyte.cli:astrocyte_cli"]},
     install_requires=[
         "nrn-glia>=0.1.8",
