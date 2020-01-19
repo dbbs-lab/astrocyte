@@ -112,7 +112,7 @@ def astrocyte_cli():
 
     # Remove mod file
     remove_parser = subparsers.add_parser(
-        "remove", aliases=("rm"), description="Remove components from the package."
+        "remove", aliases=["rm"], description="Remove components from the package."
     )
     remove_subparsers = remove_parser.add_subparsers()
     remove_mod_parser = remove_subparsers.add_parser(
@@ -252,7 +252,7 @@ def remove_mod_file(args):
     if not candidates:
         raise AstroError("No assets found matching '{}'".format(mod_part))
     message = (
-        len(candidates)
+        str(len(candidates))
         + " mod files found:\n"
         + "\n".join(candidates)
         + "\nAre you sure you want to remove the above mod files [y/n]?\n"
