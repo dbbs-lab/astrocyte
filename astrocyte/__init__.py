@@ -188,7 +188,7 @@ class Package:
             content = file.read().replace(v(self.version),v(new_version))
         with open(self.get_source_path("__init__.py"), "w") as file:
             file.write(content)
-            self.version = v
+            self.version = new_version
 
     def commit(self, message):
         # Add modified files to commit
