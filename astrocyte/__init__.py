@@ -451,3 +451,13 @@ def find_files(path_pattern):
     valid_pths = [pth for pth in pths if match(pth)]
 
     return valid_pths
+    local_path = os.path.join(app_directories.user_data_dir, "local")
+    if os.path.exists(local_path):
+        local = get_package(local_path)
+    else:
+        from .cli import create_package
+        from time import sleep
+        args = type("Namespace", (object,), {"folder": local_path})()
+        local = create_package(args, {"author": "User", "email": "not@applicable.com", "pkg_name": "local"})
+        local.link()
+    return local
