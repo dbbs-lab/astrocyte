@@ -17,6 +17,8 @@ except ModuleNotFoundError as _:
     from astrocyte.templates import create_template
     from astrocyte.exceptions import AstroError
 
+_exit_on_fail = True
+
 
 class AliasedSubParsersAction(argparse._SubParsersAction):
     old_init = staticmethod(argparse._ActionsContainer.__init__)
@@ -168,7 +170,10 @@ def astrocyte_cli():
             cl_args.func(cl_args)
         except AstroError as e:
             print("ERROR", str(e))
-            exit(1)
+            if _exit_on_fail:
+                exit(1)
+            else:
+                raise
 
 
 def create_package(args, presets=None):
