@@ -48,6 +48,9 @@ install it::
    astro install
    astro upload
 
+To upload your packages you will need to register and authenticate with an account on
+`GliaPI <https://glia-pkg.org/home>`_.
+
 For use on your local computer either use::
 
    astro add mod --local /path/to/mod/file
