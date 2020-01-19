@@ -32,6 +32,7 @@ jobs:
     - name: Run unittests
       run: |
         coverage run -m unittest discover -s tests
+        ls -la .
       env:
         API_USERNAME: ${{ secrets.API_USERNAME }}
         API_PASSWORD: ${{ secrets.API_PASSWORD }}
