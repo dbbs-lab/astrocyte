@@ -266,7 +266,8 @@ class Package:
 def get_package(path=None):
     path = path or os.getcwd()
     try:
-        pkg_data = json.load(open(os.path.join(path, ".astro", "pkg")))
+        with open(os.path.join(path, ".astro", "pkg")) as file:
+            pkg_data = json.load(file)
     except FileNotFoundError as _:
         raise AstroError("This directory is not a glia package.")
     pkg = Package(path, pkg_data)
