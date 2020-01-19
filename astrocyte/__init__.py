@@ -146,7 +146,7 @@ class Package:
         from . import api
         import subprocess
 
-        cdw = os.getcwd()
+        cwd = os.getcwd()
         os.chdir(self.path)
         print("Uploading glia package", self)
         api.upload_meta(self)
