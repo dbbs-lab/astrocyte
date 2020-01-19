@@ -34,6 +34,7 @@ jobs:
         coverage run -m unittest discover -s tests
       env:
         API_USERNAME: ${{ secrets.API_USERNAME }}
+        API_PASSWORD: ${{ secrets.API_PASSWORD }}
     - uses: codecov/codecov-action@v1
       with:
         token: ${{ secrets.CODECOV_TOKEN }} #required

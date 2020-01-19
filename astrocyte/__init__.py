@@ -91,9 +91,16 @@ class Package:
         mod.delete()
 
     def set_path(self, path):
+        from importlib import reload
+
         self.path = os.path.abspath(path)
+        # Insert pkg path as first directory on PATH to be found first.
         sys.path.insert(0, self.path)
-        self.version = __import__(self.name).__version__
+        # Reload the module and reimport the version.
+        pkg_module = __import__(self.name)
+        reload(pkg_module)
+        self.version = __import__(self.name, globals(), locals(), ["__version__"], 0)
+        # Remove pkg path from PATH
         sys.path.remove(self.path)
 
     def get_source_path(self, *args):
