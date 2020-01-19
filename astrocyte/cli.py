@@ -101,8 +101,16 @@ def astrocyte_cli():
             print('ERROR',str(e))
             exit(1)
 
-def create_package(args):
+
+def create_package(args, presets=None):
+    # Set presets for non-interactive mode.
+    if presets is None:
+        presets = {}
+    if not "folder" in presets:
+        presets["folder"] = None
+    # Get paths. `folder` is the absolute path and `folder_name` doubles as the package name
     folder = os.path.abspath(args.folder)
+    folder_name = args.folder.split(os.sep)[-1]
     # Create root folder
     try:
         os.mkdir(folder)
