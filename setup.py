@@ -20,6 +20,7 @@ if not os.getenv("RTD_BUILD"):
         ],
     }
 else:
+    # We're in a ReadTheDocs build: don't add any data files.
     data_files = {}
 
 setuptools.setup(

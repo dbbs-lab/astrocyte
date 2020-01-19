@@ -110,6 +110,26 @@ def astrocyte_cli():
     )
     edit_parser.set_defaults(func=edit_mod_file)
 
+    # Remove mod file
+    remove_parser = subparsers.add_parser(
+        "remove", aliases=("rm"), description="Remove components from the package."
+    )
+    remove_subparsers = remove_parser.add_subparsers()
+    remove_mod_parser = remove_subparsers.add_parser(
+        "mod", aliases=("m"), description="Remove a mod file to your package."
+    )
+    remove_mod_parser.add_argument("name", action="store", help="Name of the asset.")
+    remove_mod_parser.add_argument(
+        "-v", "--variant", action="store", help="Variant name of the asset."
+    )
+    remove_mod_parser.add_argument(
+        "-f", "--force", action="store_true", help="Don't prompt for confirmation."
+    )
+    remove_mod_parser.add_argument(
+        "-l", "--local", action="store_true", help="Remove the mod file for local use."
+    )
+    remove_mod_parser.set_defaults(func=remove_mod_file)
+
     # Build wheel
     wheel_parser = subparsers.add_parser(
         "build", description="Build the package into a wheel."
@@ -226,8 +246,24 @@ def add_mod_file(args):
     pkg.add_mod_file(args.file, name=args.name, variant=args.variant)
 
 
+def remove_mod_file(args):
+    pkg = _get_pkg(args)
+    candidates = pkg.get_mod_candidates(args.name)
+    if not candidates:
+        raise AstroError("No assets found matching '{}'".format(mod_part))
+    message = (
+        len(candidates)
+        + " mod files found:\n"
+        + "\n".join(candidates)
+        + "\nAre you sure you want to remove the above mod files [y/n]?\n"
+    )
+    if not args.force and input(message) != "y":
+        return
+    for candidate in candidates:
+        pkg.remove_mod_file(candidate)
+
+
 def edit_mod_file(args):
-    pkg = get_package()
     pkg = _get_pkg(args)
     pkg.edit_asset(args.asset, name=args.name, variant=args.variant)
 
