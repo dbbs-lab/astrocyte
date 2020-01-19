@@ -111,22 +111,28 @@ class Package:
     def upload(self):
         from . import api
         import subprocess
+        cdw = os.getcwd()
+        os.chdir(self.path)
         print("Uploading glia package", self)
         api.upload_meta(self)
-        cmnd = ["twine", "upload",
+        cmnd = [
+            "twine",
+            "upload",
             "--username=_",
             "--password=" + api.get_valid_token(),
             "--disable-progress-bar",
             "--repository-url=" + api.__repo_url__,
-            os.path.join("dist", "*{}*".format(self.version))
+            os.path.join("dist", "*{}*".format(self.version)),
         ]
         process, out, err = execute_command(cmnd)
         process.communicate()
+        os.chdir(cwd)
         self._uploaded = process.returncode == 0
         if not self._uploaded:
             if err.find("InvalidDistributionError") != -1:
-                raise InvalidDistributionError("No build files for " + str(self)
-                    + ". Use `astro build`.")
+                raise InvalidDistributionError(
+                    "No build files for " + str(self) + ". Use `astro build`."
+                )
             elif err.find("Error: Use a valid email address") != -1:
                 raise InvalidMetaError("The package author email metadata is invalid.")
             else:
