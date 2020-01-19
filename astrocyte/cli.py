@@ -1,85 +1,130 @@
 import os, sys, argparse, json
 from shutil import copy2 as copy_file
+
 try:
     from .templates import create_template
-    from . import Package, get_package, get_glia_version, __version__
+    from . import Package, get_package, load_local_pkg, get_glia_version, __version__
     from .exceptions import AstroError
 except ModuleNotFoundError as _:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-    from astrocyte import Package, get_package, get_glia_version, __version__
+    from astrocyte import (
+        Package,
+        load_local_pkg,
+        get_package,
+        get_glia_version,
+        __version__,
+    )
     from astrocyte.templates import create_template
     from astrocyte.exceptions import AstroError
+
 
 class AliasedSubParsersAction(argparse._SubParsersAction):
     old_init = staticmethod(argparse._ActionsContainer.__init__)
 
     @staticmethod
-    def _containerInit(self, description, prefix_chars, argument_default, conflict_handler):
-        AliasedSubParsersAction.old_init(self, description, prefix_chars, argument_default, conflict_handler)
-        self.register('action', 'parsers', AliasedSubParsersAction)
+    def _containerInit(
+        self, description, prefix_chars, argument_default, conflict_handler
+    ):
+        AliasedSubParsersAction.old_init(
+            self, description, prefix_chars, argument_default, conflict_handler
+        )
+        self.register("action", "parsers", AliasedSubParsersAction)
 
     class _AliasedPseudoAction(argparse.Action):
         def __init__(self, name, aliases, help):
             dest = name
             if aliases:
-                dest += ' (%s)' % ','.join(aliases)
+                dest += " (%s)" % ",".join(aliases)
             sup = super(AliasedSubParsersAction._AliasedPseudoAction, self)
             sup.__init__(option_strings=[], dest=dest, help=help)
 
     def add_parser(self, name, **kwargs):
-        aliases = kwargs.pop('aliases', [])
+        aliases = kwargs.pop("aliases", [])
         parser = super(AliasedSubParsersAction, self).add_parser(name, **kwargs)
 
         # Make the aliases work.
         for alias in aliases:
             self._name_parser_map[alias] = parser
         # Make the help text reflect them, first removing old help entry.
-        if 'help' in kwargs:
-            help = kwargs.pop('help')
+        if "help" in kwargs:
+            help = kwargs.pop("help")
             self._choices_actions.pop()
             pseudo_action = self._AliasedPseudoAction(name, aliases, help)
             self._choices_actions.append(pseudo_action)
 
         return parser
 
+
 # override argparse to register new subparser action by default
 argparse._ActionsContainer.__init__ = AliasedSubParsersAction._containerInit
+
 
 def astrocyte_cli():
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
 
     # Create package
-    create_parser = subparsers.add_parser("create", aliases=('c'), description="Create packages or components.")
+    create_parser = subparsers.add_parser(
+        "create", aliases=("c"), description="Create packages or components."
+    )
     create_subparsers = create_parser.add_subparsers()
-    create_package_parser = create_subparsers.add_parser("package", aliases=('pkg', 'p'), description="Create an empty package.")
-    create_package_parser.add_argument('folder', action='store', help='Location of the package folder.')
+    create_package_parser = create_subparsers.add_parser(
+        "package", aliases=("pkg", "p"), description="Create an empty package."
+    )
+    create_package_parser.add_argument(
+        "folder", action="store", help="Location of the package folder."
+    )
     create_package_parser.set_defaults(func=create_package)
 
     # Add mod file
-    add_parser = subparsers.add_parser("add", aliases=('a'), description="Create packages or components.")
+    add_parser = subparsers.add_parser(
+        "add", aliases=("a"), description="Create packages or components."
+    )
     add_subparsers = add_parser.add_subparsers()
-    add_mod_parser = add_subparsers.add_parser("mod", aliases=('m'), description="Add a mod file to your package.")
-    add_mod_parser.add_argument('file', action='store', help='Path of the mod file.')
-    add_mod_parser.add_argument('-n', '--name', action='store', help='Asset name of the mod file.')
-    add_mod_parser.add_argument('-v', '--variant', action='store', help='Variant name of the asset.')
+    add_mod_parser = add_subparsers.add_parser(
+        "mod", aliases=("m"), description="Add a mod file to your package."
+    )
+    add_mod_parser.add_argument("file", action="store", help="Path of the mod file.")
+    add_mod_parser.add_argument(
+        "-n", "--name", action="store", help="Asset name of the mod file."
+    )
+    add_mod_parser.add_argument(
+        "-v", "--variant", action="store", help="Variant name of the asset."
+    )
+    add_mod_parser.add_argument(
+        "-l", "--local", action="store_true", help="Add the mod file for local use."
+    )
     add_mod_parser.set_defaults(func=add_mod_file)
 
     # Edit asset
-    edit_parser = subparsers.add_parser("edit", aliases=('a'), description="Edit packages or components.")
-    edit_parser.add_argument('asset', action='store', help='Unique part of the asset name.')
-    edit_parser.add_argument('-n', '--name', action='store', help='New asset name.')
-    edit_parser.add_argument('-v', '--variant', action='store', help='New variant name.')
+    edit_parser = subparsers.add_parser(
+        "edit", aliases=("a"), description="Edit packages or components."
+    )
+    edit_parser.add_argument(
+        "asset", action="store", help="Unique part of the asset name."
+    )
+    edit_parser.add_argument("-n", "--name", action="store", help="New asset name.")
+    edit_parser.add_argument("-v", "--variant", action="store", help="New variant name.")
     edit_parser.set_defaults(func=edit_mod_file)
 
     # Build wheel
-    wheel_parser = subparsers.add_parser("build", description="Build the package into a wheel.")
-    wheel_parser.add_argument("--upload", action="store_true", help="Upload the wheel after a succesfull build.")
-    wheel_parser.add_argument("--install", action="store_true", help="Install the wheel after a succesfull build.")
+    wheel_parser = subparsers.add_parser(
+        "build", description="Build the package into a wheel."
+    )
+    wheel_parser.add_argument(
+        "--upload", action="store_true", help="Upload the wheel after a succesfull build."
+    )
+    wheel_parser.add_argument(
+        "--install",
+        action="store_true",
+        help="Install the wheel after a succesfull build.",
+    )
     wheel_parser.set_defaults(func=build_package)
 
     # Upload wheel
-    wheel_parser = subparsers.add_parser("upload", description="Upload current wheel to PyPI.")
+    wheel_parser = subparsers.add_parser(
+        "upload", description="Upload current wheel to PyPI."
+    )
     wheel_parser.set_defaults(func=upload_package)
 
     # Install wheel
@@ -87,19 +132,29 @@ def astrocyte_cli():
     wheel_parser.set_defaults(func=install_package)
 
     # Uninstall wheel
-    unwheel_parser = subparsers.add_parser("uninstall", description="Uninstall current wheel.")
+    unwheel_parser = subparsers.add_parser(
+        "uninstall", description="Uninstall current wheel."
+    )
     unwheel_parser.set_defaults(func=uninstall_package)
 
     cl_args = parser.parse_args()
-    if hasattr(cl_args, 'func'):
+    if hasattr(cl_args, "func"):
         try:
             cl_args.func(cl_args)
         except AstroError as e:
-            print('ERROR',str(e))
+            print("ERROR", str(e))
             exit(1)
 
-def create_package(args):
+
+def create_package(args, presets=None):
+    # Set presets for non-interactive mode.
+    if presets is None:
+        presets = {}
+    if not "folder" in presets:
+        presets["folder"] = None
+    # Get paths. `folder` is the absolute path and `folder_name` doubles as the package name
     folder = os.path.abspath(args.folder)
+    folder_name = args.folder.split(os.sep)[-1]
     # Create root folder
     try:
         os.mkdir(folder)
@@ -107,14 +162,19 @@ def create_package(args):
         raise AstroError("Target location already exists.") from None
     # Initialize git repo.
     from git import Repo, Actor
+
     repo = Repo.init(folder)
     # Ask package information
     pkg_data = {
-        "pkg_name": args.folder,
-        "name": input("Package name [{}]: ".format(args.folder)) or args.folder
+        "pkg_name": folder_name,
+        # Package naming priority: preset > user input > folder name.
+        "name": presets["pkg_name"]
+        or input("Package name [{}]: ".format(folder_name))
+        or folder_name,
     }
-    pkg_data["author"] = input_required("Author: ")
-    pkg_data["email"] = input_required("Email: ")
+    pkg_data["author"] = input_required("author", presets)
+    pkg_data["email"] = input_required("email", presets)
+    # Fill in the rest of the package information.
     pkg_data["glia_version"] = get_glia_version()
     pkg_data["astro_version"] = __version__
     pkg_folder = os.path.join(folder, pkg_data["name"])
@@ -122,35 +182,45 @@ def create_package(args):
     astro_folder = os.path.join(folder, ".astro")
 
     # Create package files
-    create_template("setup.py", folder, locals=pkg_data)            # setup.py
-    create_template("README.md", folder, locals=pkg_data)           # README
-    create_template(".gitignore", folder)                           # .gitignore
-    os.mkdir(pkg_folder)                                            # package folder
-    os.mkdir(mod_folder)                                            # mod folder
-    create_template("__init__.py", pkg_folder, locals=pkg_data)     # __init__.py
-    os.mkdir(astro_folder)                                          # astro folder
-    make(os.path.join(astro_folder, "pkg"), json.dumps(pkg_data))   # pkg json
+    create_template("setup.py", folder, locals=pkg_data)  # setup.py
+    create_template("README.md", folder, locals=pkg_data)  # README
+    create_template(".gitignore", folder)  # .gitignore
+    os.mkdir(pkg_folder)  # package folder
+    os.mkdir(mod_folder)  # mod folder
+    create_template("__init__.py", pkg_folder, locals=pkg_data)  # __init__.py
+    os.mkdir(astro_folder)  # astro folder
+    make(os.path.join(astro_folder, "pkg"), json.dumps(pkg_data))  # pkg json
 
     # Hide .astro folder on Windows
-    if sys.platform == 'win32':
+    if sys.platform == "win32":
         import ctypes
+
         ctypes.windll.kernel32.SetFileAttributesW(astro_folder, 2)
 
     # Make initial commit
     index = repo.index
     index.add(repo.untracked_files)
     author = Actor(pkg_data["author"], pkg_data["email"])
-    index.commit("Initial commit generated by Astrocyte.", author=author, committer=author)
+    index.commit(
+        "Initial commit generated by Astrocyte.", author=author, committer=author
+    )
     # Finish
     print("Package skeleton created.")
+    return Package(folder, pkg_data)
+
 
 def add_mod_file(args):
-    pkg = get_package()
+    if args.local:
+        pkg = load_local_pkg()
+    else:
+        pkg = get_package()
     pkg.add_mod_file(args.file, name=args.name, variant=args.variant)
+
 
 def edit_mod_file(args):
     pkg = get_package()
     pkg.edit_asset(args.asset, name=args.name, variant=args.variant)
+
 
 def build_package(args):
     pkg = get_package()
@@ -160,28 +230,37 @@ def build_package(args):
     if pkg.built() and args.upload:
         pkg.upload()
 
+
 def upload_package(args):
     pkg = get_package()
     pkg.upload()
+
 
 def install_package(args):
     pkg = get_package()
     pkg.install()
 
+
 def uninstall_package(args):
     pkg = get_package()
     pkg.uninstall()
+
 
 def make(target, content):
     f = open(target, "w")
     f.write(content)
     f.close()
 
-def input_required(msg):
+
+def input_required(key, presets={}):
+    # Silly ol' trick for non-interactive mode.
+    if key in presets:
+        return presets[key]
     response = ""
     while not response:
-        response = input(msg)
+        response = input(key.capitalize() + ": ")
     return response
+
 
 if __name__ == "__main__":
     print("Careful! Executing cli.py is unsupported.")

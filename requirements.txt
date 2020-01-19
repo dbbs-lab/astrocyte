@@ -1,0 +1,6 @@
+packaging>=19.0
+requests>=2.22.0
+gitpython>=3.0.0
+twine>=3.0.0
+nrn-glia>=0.1.8
+appdirs>=1.4.3
