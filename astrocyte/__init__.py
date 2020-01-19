@@ -201,9 +201,14 @@ class Package:
 
     def get_distribution(self):
         try:
-            return os.path.abspath(glob.glob(os.path.join("dist", "*{}*".format(self.version)))[0])
+            return os.path.abspath(
+                glob.glob(os.path.join(self.path, "dist", "*{}*".format(self.version)))[0]
+            )
         except IndexError as _:
-            raise InvalidDistributionError("No build files for " + str(self) + ". Use `astro build`.")
+            raise InvalidDistributionError(
+                "No build files for " + str(self) + ". Use `astro build`."
+            )
+
 
 def get_package(path=None):
     path = path or os.getcwd()
