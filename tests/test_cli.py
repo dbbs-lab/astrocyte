@@ -1,5 +1,6 @@
 import unittest, os, sys, argparse
 
+unittest.TestLoader.sortTestMethodsUsing = None
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import astrocyte.cli
 
@@ -30,13 +31,25 @@ class TestCLI(unittest.TestCase):
     def test_basics(self):
         self.assertRaises(argparse.ArgumentError, run_cli_command, "doesntexist")
 
+    def test_create(self):
         run_cli_command(
             "create package my-test --name=my_test --author=dude --email=bruv@eyo.com"
         )
 
+    def test_add_mod(self):
         os.chdir("my-test")
 
         # Add mechanism
         run_cli_command("add mod ../tests/mod/Kca1_1.mod")
         # Add point process
         run_cli_command("add mod ../tests/mod/NMDA.mod")
+
+    def test_build(self):
+        run_cli_command("build")
+
+    def test_install(self):
+        run_cli_command("install")
+
+    def test_upload(self):
+        print("API_USERNAME" in os.environ)
+        print(os.getenv("API_USERNAME"))
