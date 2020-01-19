@@ -7,7 +7,13 @@ try:
     from .exceptions import AstroError
 except ModuleNotFoundError as _:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-    from astrocyte import Package, load_local_pkg, get_package, get_glia_version, __version__
+    from astrocyte import (
+        Package,
+        load_local_pkg,
+        get_package,
+        get_glia_version,
+        __version__,
+    )
     from astrocyte.templates import create_template
     from astrocyte.exceptions import AstroError
 
@@ -162,7 +168,9 @@ def create_package(args, presets=None):
     pkg_data = {
         "pkg_name": folder_name,
         # Package naming priority: preset > user input > folder name.
-        "name": presets["pkg_name"] or input("Package name [{}]: ".format(folder_name)) or folder_name,
+        "name": presets["pkg_name"]
+        or input("Package name [{}]: ".format(folder_name))
+        or folder_name,
     }
     pkg_data["author"] = input_required("author", presets)
     pkg_data["email"] = input_required("email", presets)

@@ -111,6 +111,7 @@ class Package:
     def build(self):
         import subprocess
         from time import sleep
+
         cwd = os.getcwd()
         os.chdir(self.path)
         self.increment_version()
@@ -129,6 +130,7 @@ class Package:
     def upload(self):
         from . import api
         import subprocess
+
         cdw = os.getcwd()
         os.chdir(self.path)
         print("Uploading glia package", self)
@@ -160,10 +162,11 @@ class Package:
 
     def link(self):
         import subprocess, site
+
         cwd = os.getcwd()
         os.chdir(self.path)
 
-        cmnd =  [sys.executable, "-m", "pip", "install", "-e", "."]
+        cmnd = [sys.executable, "-m", "pip", "install", "-e", "."]
         process, out, err = execute_command(cmnd)
         process.communicate()
         self._linked = process.returncode == 0
@@ -252,7 +255,7 @@ class Package:
 
 def get_package(path=None):
     path = path or os.getcwd()
-    print('PATH?', path, os.getcwd())
+    print("PATH?", path, os.getcwd())
     try:
         print("LISTDIR:", os.listdir(os.path.join(path, ".astro")))
         pkg_data = json.load(open(os.path.join(path, ".astro", "pkg")))
@@ -527,6 +530,7 @@ def find_files(path_pattern):
 
     return valid_pths
 
+
 def load_local_pkg():
     local_path = os.path.join(app_directories.user_data_dir, "local")
     if os.path.exists(local_path):
@@ -534,7 +538,10 @@ def load_local_pkg():
     else:
         from .cli import create_package
         from time import sleep
+
         args = type("Namespace", (object,), {"folder": local_path})()
-        local = create_package(args, {"author": "User", "email": "not@applicable.com", "pkg_name": "local"})
+        local = create_package(
+            args, {"author": "User", "email": "not@applicable.com", "pkg_name": "local"}
+        )
         local.link()
     return local
