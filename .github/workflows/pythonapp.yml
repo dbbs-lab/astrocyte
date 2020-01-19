@@ -24,6 +24,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install coverage
+    - name: Install NEURON
+      run: |
+        wget https://neuron.yale.edu/ftp/neuron/versions/v7.7/nrn-7.7.x86_64-linux.deb
+        sudo dpkg -i nrn-7.7.x86_64-linux.deb
+        export PYTHONPATH=/usr/local/nrn/lib/python
     - name: Collect MOD files
       run: |
         mkdir tests/mod
