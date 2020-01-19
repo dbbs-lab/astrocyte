@@ -213,7 +213,7 @@ class Package:
         self._installed = process.returncode == 0
         if not self._installed:
             raise BuildError("Could not install build:" + err)
-        else:
+        elif not os.getenv("CI"):
             print("Installed glia package", self)
             import glia
 

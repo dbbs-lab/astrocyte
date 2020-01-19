@@ -24,12 +24,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install coverage
-    - name: Install NEURON
-      run: |
-        wget https://neuron.yale.edu/ftp/neuron/versions/v7.7/nrn-7.7.x86_64-linux.deb
-        sudo dpkg -i nrn-7.7.x86_64-linux.deb
-        export PYTHONPATH=/usr/local/nrn/lib/python
-        export CI=TRUE
     - name: Collect MOD files
       run: |
         mkdir tests/mod
@@ -41,6 +35,7 @@ jobs:
       env:
         API_USERNAME: ${{ secrets.API_USERNAME }}
         API_PASSWORD: ${{ secrets.API_PASSWORD }}
+        CI: TRUE
     - uses: codecov/codecov-action@v1
       with:
         token: ${{ secrets.CODECOV_TOKEN }} #required
