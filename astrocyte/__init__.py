@@ -10,23 +10,27 @@ app_directories = AppDirs("Astrocyte", "Alexandria")
 
 def execute_command(cmnd):
     import subprocess
+
     process = subprocess.Popen(cmnd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    std_out_str, std_err_str = '', ''
-    for c in iter(lambda: process.stdout.read(1), b''):
-        s = c.decode('UTF-8', 'ignore')
+    std_out_str, std_err_str = "", ""
+    for c in iter(lambda: process.stdout.read(1), b""):
+        s = c.decode("UTF-8", "ignore")
         sys.stdout.write(s)
         std_out_str += s
-    for c in iter(lambda: process.stderr.read(1), b''):
-        s = c.decode('UTF-8', 'ignore')
+    for c in iter(lambda: process.stderr.read(1), b""):
+        s = c.decode("UTF-8", "ignore")
         std_err_str += s
     return process, std_out_str, std_err_str
+
 
 def execute_python(script):
     return execute_command([sys.executable, "-c" + script])
 
+
 class Package:
     def __init__(self, path, pkg_data):
         from git import Repo, Actor
+
         self.repo = Repo(path)
         self.data = pkg_data
         self.package_name = pkg_data["pkg_name"]
@@ -39,42 +43,56 @@ class Package:
     def __str__(self):
         return self.package_name + " v" + self.version
 
-    def add_mod_file(self, file, name=None, variant='0'):
+    def add_mod_file(self, file, name=None, variant="0"):
         if not os.path.exists(file):
             raise AstroError("Mod file not found.")
         extension = os.path.splitext(file)[1]
         if extension != ".mod":
             raise AstroError("This is not a mod file.")
         if name is not None:
-            mod_name = 'glia__' + self.name + '__' + name + '__' + variant
+            mod_name = "glia__" + self.name + "__" + name + "__" + variant
         else:
             mod_name = get_path_mod_name(file)
             og_name = mod_name
-            if mod_name.startswith('glia__'):
+            if mod_name.startswith("glia__"):
                 if len(mod_name.split("__")) != 4:
-                    raise AstroError("Mod files cannot contain double underscores unless the filename follows the Glia naming convention.")
+                    raise AstroError(
+                        "Mod files cannot contain double underscores unless the filename follows the Glia naming convention."
+                    )
                 pkg_name, asset, variant = parse_asset_name(mod_name)
                 mod_name = "glia__{}__{}__{}".format(self.name, asset, variant)
             else:
-                mod_name = 'glia__' + self.name + '__' + mod_name + '__' + variant
+                mod_name = "glia__" + self.name + "__" + mod_name + "__" + variant
             if og_name != mod_name:
                 print("Mod filename changed from '{}' to '{}'".format(og_name, mod_name))
-        self.import_mod_file(file, os.path.join(self.path, self.name, "mod", mod_name + ".mod"), mod_name)
+        self.import_mod_file(
+            file, os.path.join(self.path, self.name, "mod", mod_name + ".mod"), mod_name
+        )
         self.commit("Added " + mod_name)
 
     def import_mod_file(self, origin, destination, name):
         from shutil import copy2
+
         copy2(origin, destination)
         mod = Mod(self, name)
         mod.sanitize_mod_file()
         return mod
 
     def edit_asset(self, mod_part, name=None, variant=None):
-        candidates = list(map(lambda x: get_path_mod_name(x), find_files(self.get_mod_path("*" + mod_part + "*"))))
+        candidates = list(
+            map(
+                lambda x: get_path_mod_name(x),
+                find_files(self.get_mod_path("*" + mod_part + "*")),
+            )
+        )
         if len(candidates) == 0:
             raise AstroError("No assets found matching '{}'".format(mod_part))
         elif len(candidates) > 1:
-            raise AstroError("Multiple matches found for '{}'".format(mod_part) + "\n" + "\n".join(candidates))
+            raise AstroError(
+                "Multiple matches found for '{}'".format(mod_part)
+                + "\n"
+                + "\n".join(candidates)
+            )
         mod = Mod(self, candidates[0])
         mod.set_names(name=name, variant=variant)
 
@@ -158,7 +176,10 @@ class Package:
 
     def install(self):
         import subprocess, site
-        site_packages = list(filter(lambda s: s.find("site-packages") != -1, site.getsitepackages()))
+
+        site_packages = list(
+            filter(lambda s: s.find("site-packages") != -1, site.getsitepackages())
+        )
         distfile = self.get_distribution()
         old_dir = os.getcwd()
         if len(site_packages) > 0:
@@ -178,7 +199,10 @@ class Package:
 
     def uninstall(self):
         import subprocess, site
-        site_packages = list(filter(lambda s: s.find("site-packages") != -1, site.getsitepackages()))
+
+        site_packages = list(
+            filter(lambda s: s.find("site-packages") != -1, site.getsitepackages())
+        )
         distfile = self.get_distribution()
         old_dir = os.getcwd()
         if len(site_packages) > 0:
@@ -189,9 +213,9 @@ class Package:
         # Extra call to communicate required or subprocess freezes.
         process.communicate()
         os.chdir(old_dir)
-        self._installed = process.returncode == 0
-        if not self._installed:
-            raise BuildError("Could not install build:" + err)
+        self._installed = process.returncode != 0
+        if self._installed:
+            raise BuildError("Could not uninstall:" + err)
         else:
             print("Uninstalled glia package", self)
             import glia
@@ -199,9 +223,9 @@ class Package:
     def increment_version(self):
         splits = self.version.split(".")
         new_version = ".".join(splits[0:-1]) + "." + str(int(splits[-1]) + 1)
-        v = lambda v: "__version__ = \"{}\"".format(v)
+        v = lambda v: '__version__ = "{}"'.format(v)
         with open(self.get_source_path("__init__.py"), "r") as file:
-            content = file.read().replace(v(self.version),v(new_version))
+            content = file.read().replace(v(self.version), v(new_version))
         with open(self.get_source_path("__init__.py"), "w") as file:
             file.write(content)
             self.version = new_version
@@ -228,13 +252,15 @@ class Package:
 
 def get_package(path=None):
     path = path or os.getcwd()
+    print('PATH?', path, os.getcwd())
     try:
+        print("LISTDIR:", os.listdir(os.path.join(path, ".astro")))
         pkg_data = json.load(open(os.path.join(path, ".astro", "pkg")))
     except FileNotFoundError as _:
         raise AstroError("This directory is not a glia package.")
-        exit(1)
     pkg = Package(path, pkg_data)
     return pkg
+
 
 class Mod:
     def __init__(self, pkg, namespaced_name):
@@ -255,27 +281,34 @@ class Mod:
         return "mod_" + self.get_full_name()
 
     def set_names(self, name=None, variant=None):
-        '''
+        """
             Change this Mod's names. Updates the mod file and __init__.py
-        '''
+        """
         old_asset_name = self.asset_name
         old_variant = self.variant
         new_asset_name = name or self.asset_name
         new_variant = variant or self.variant
         old_name = self.get_full_name()
         new_name = get_asset_name(self.namespace, new_asset_name, new_variant)
-        os.rename(self.pkg.get_mod_path(old_name) + ".mod", self.pkg.get_mod_path(new_name) + ".mod")
+        os.rename(
+            self.pkg.get_mod_path(old_name) + ".mod",
+            self.pkg.get_mod_path(new_name) + ".mod",
+        )
         self.writer.replace(old_name, new_name)
         self.asset_name = new_asset_name
         self.variant = new_variant
         self.writer.update()
         self.sanitize_mod_file()
-        self.pkg.commit("Renamed {} to {}".format(old_asset_name + "." + old_variant, new_asset_name + "." + new_variant))
+        self.pkg.commit(
+            "Renamed {} to {}".format(
+                old_asset_name + "." + old_variant, new_asset_name + "." + new_variant
+            )
+        )
 
     def get_mod_file(self):
-        '''
+        """
             Return the full filename of the mod file.
-        '''
+        """
         return self.pkg.get_mod_path(self.get_full_name()) + ".mod"
 
     def sanitize_mod_file(self):
@@ -296,9 +329,11 @@ class Mod:
             # Remove all previous name statements
             if l.lower().strip().startswith(name_statement.lower()):
                 lines.remove(l)
-            if l.replace("{", "").lower().strip() == 'neuron':
+            if l.replace("{", "").lower().strip() == "neuron":
                 # Add the name statement to be inserted.
-                inserts.append((i + 1, name_statement + " " + self.get_full_name() + "\n"))
+                inserts.append(
+                    (i + 1, name_statement + " " + self.get_full_name() + "\n")
+                )
         # Inser the new statements
         for i, l in enumerate(inserts):
             lines.insert(i + l[0], l[1])
@@ -314,16 +349,19 @@ class Mod:
                 return True
         return False
 
+
 def get_glia_version():
     # TODO: Use pip to find the installed glia version.
     return "0.1.1"
+
 
 def get_minimum_glia_version():
     # TODO: Use pip to find the installed glia version and determine major version
     return get_glia_version()
 
+
 class Writer:
-    exclude = ['pkg', 'writer']
+    exclude = ["pkg", "writer"]
     repr_types = [int, bool, str]
 
     def __init__(self, obj):
@@ -350,7 +388,7 @@ class Writer:
                         fresh[k] = True
                     else:
                         # Add a new content line before the end
-                        self.read[(roi[1]-2):(roi[1]-2)] = [line]
+                        self.read[(roi[1] - 2) : (roi[1] - 2)] = [line]
                         roi = tuple([roi[0], roi[1] + 1])
             for key, line in sorted(content.items(), key=lambda x: x[1][0], reverse=True):
                 if not key in fresh:
@@ -366,7 +404,7 @@ class Writer:
         start = -1
         for i, l in enumerate(self.read):
             if l.strip() == tagline:
-                self.indent = len(l) - len(l.lstrip(' '))
+                self.indent = len(l) - len(l.lstrip(" "))
                 if not find_end:
                     return i
                 else:
@@ -381,7 +419,12 @@ class Writer:
         values = {}
         for i in roi:
             line = self.read[i].strip()
-            if line.startswith("#") or line.startswith("pkg") or line.endswith("= Mod()") or line.endswith("= pkg"):
+            if (
+                line.startswith("#")
+                or line.startswith("pkg")
+                or line.endswith("= Mod()")
+                or line.endswith("= pkg")
+            ):
                 continue
             assignee, evaluee = tuple(line.split("="))
             evaluee = eval(evaluee)
@@ -393,7 +436,7 @@ class Writer:
         return "#-" + self.obj.get_writername()
 
     def get_endline(self):
-        return '#-##'
+        return "#-##"
 
     def insert(self):
         i, indent = self.find_line("return pkg", return_indent=True)
@@ -406,21 +449,26 @@ class Writer:
     def header(self, indent=0):
         return [
             self.line("#-Generated by Astrocyte v{}".format(__version__), indent),
-            self.line(self.get_tagline(), indent)
+            self.line(self.get_tagline(), indent),
         ]
 
     def content(self, indent=0):
-        lines = [self.line(self.obj.get_writername() + " = " + self.obj.__class__.__name__ + "()", indent)]
+        lines = [
+            self.line(
+                self.obj.get_writername() + " = " + self.obj.__class__.__name__ + "()",
+                indent,
+            )
+        ]
         for k, v in self.obj.__dict__.items():
             if not k in self.__class__.exclude:
                 lines.append(self.property_line(k, v, indent))
-        lines.append(self.line(self.obj.get_writername() + '.pkg = pkg', indent))
+        lines.append(self.line(self.obj.get_writername() + ".pkg = pkg", indent))
         return lines
 
     def footer(self, indent=0):
         return [
             self.line("pkg.mods.append({})".format(self.obj.get_writername()), indent),
-            self.line("#-##", indent)
+            self.line("#-##", indent),
         ]
 
     def line(self, msg, indent=0):
@@ -428,14 +476,16 @@ class Writer:
 
     def property_line(self, k, v, indent):
         if type(v) in self.__class__.repr_types:
-            return self.line(self.obj.get_writername() + ".{} = {}".format(k, repr(v)), indent)
+            return self.line(
+                self.obj.get_writername() + ".{} = {}".format(k, repr(v)), indent
+            )
         raise Exception("Unknown property type {} for {}".format(type(v).__name__, k))
 
     def find_line(self, line, return_indent=False):
         for i, l in enumerate(self.read):
             if l.strip() == line:
                 if return_indent:
-                    return i, len(l) - len(l.lstrip(' '))
+                    return i, len(l) - len(l.lstrip(" "))
                 else:
                     return i
         raise StructureError("__init__.py structure compromised.")
@@ -453,17 +503,21 @@ class Writer:
         init_file.write(content.replace(old, new))
         init_file.close()
 
+
 def parse_asset_name(name):
     splits = name.split("__")
     if len(splits) != 4:
         raise AstroError("Invalid mod name '{}'".format(name))
     return tuple(splits[1:])
 
-def get_asset_name(namespace, name, variant='0'):
+
+def get_asset_name(namespace, name, variant="0"):
     return "{}__{}__{}".format(namespace, name, variant)
+
 
 def get_path_mod_name(path):
     return os.path.splitext(os.path.basename(path))[0]
+
 
 def find_files(path_pattern):
     pths = glob.glob(path_pattern)
@@ -472,6 +526,8 @@ def find_files(path_pattern):
     valid_pths = [pth for pth in pths if match(pth)]
 
     return valid_pths
+
+def load_local_pkg():
     local_path = os.path.join(app_directories.user_data_dir, "local")
     if os.path.exists(local_path):
         local = get_package(local_path)
