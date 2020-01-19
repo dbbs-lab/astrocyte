@@ -159,6 +159,8 @@ def astrocyte_cli():
     upload_parser = subparsers.add_parser(
         "upload", description="Upload current wheel to PyPI."
     )
+    upload_parser.add_argument("-u", "--user", action="store", help="Username")
+    upload_parser.add_argument("-p", "--password", action="store", help="Password")
     upload_parser.set_defaults(func=upload_package)
 
     # Install wheel
@@ -301,7 +303,10 @@ def build_package(args):
 
 
 def upload_package(args):
+    from . import api
+
     pkg = get_package()
+    api.set_credentials(args.user, args.password)
     pkg.upload()
 
 

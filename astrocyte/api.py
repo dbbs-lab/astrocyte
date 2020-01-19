@@ -7,6 +7,16 @@ __repo_url__ = "https://pi.glia-pkg.org/"
 __url__ = "https://api.glia-pkg.org/"
 
 
+class Credentials:
+    user = None
+    password = None
+
+
+def set_credentials(user, password):
+    Credentials.user = user
+    Credentials.password = password
+
+
 def upload_meta(pkg):
     token = get_valid_token()
     response = requests.post(
@@ -96,8 +106,8 @@ def get_valid_token():
 
 
 def _prompt_authentication():
-    username = input("Username: ")
-    password = getpass.getpass()
+    username = Credentials.user or input("Username: ")
+    password = Credentials.password or getpass.getpass()
     remember_me = input("Stay logged in (y/n)? ").lower() == "y"
     response = requests.get(
         __url__ + "/token", auth=(username, password), params={"remember_me": remember_me}

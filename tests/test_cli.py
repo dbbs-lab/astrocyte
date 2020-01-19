@@ -28,28 +28,36 @@ class TestCLI(unittest.TestCase):
         Check if packages can be discovered.
     """
 
-    def test_basics(self):
+    def test_0_basics(self):
         self.assertRaises(argparse.ArgumentError, run_cli_command, "doesntexist")
 
-    def test_create(self):
+    def test_1_create(self):
         run_cli_command(
             "create package my-test --name=my_test --author=dude --email=bruv@eyo.com"
         )
-
-    def test_add_mod(self):
         os.chdir("my-test")
 
+    def test_2_add_mod(self):
+        print("CWD?", os.getcwd())
         # Add mechanism
         run_cli_command("add mod ../tests/mod/Kca1_1.mod")
         # Add point process
         run_cli_command("add mod ../tests/mod/NMDA.mod")
 
-    def test_build(self):
+    def test_3_build(self):
         run_cli_command("build")
 
-    def test_install(self):
+    def test_4_install(self):
         run_cli_command("install")
 
-    def test_upload(self):
-        print("API_USERNAME" in os.environ)
-        print(os.getenv("API_USERNAME"))
+    @unittest.skipIf(
+        not os.getenv("API_PASSWORD") or not os.getenv("API_USERNAME"),
+        "No credentials found in environment",
+    )
+    def test_5_upload(self):
+        run_cli_command(
+            "upload --user="
+            + os.getenv("API_USERNAME")
+            + " --password="
+            + os.getenv("API_PASSWORD")
+        )
