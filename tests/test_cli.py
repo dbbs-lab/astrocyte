@@ -30,7 +30,13 @@ class TestCLI(unittest.TestCase):
     def test_basics(self):
         self.assertRaises(argparse.ArgumentError, run_cli_command, "doesntexist")
 
-    def test_create(self):
         run_cli_command(
             "create package my-test --name=my_test --author=dude --email=bruv@eyo.com"
         )
+
+        os.chdir("my-test")
+
+        # Add mechanism
+        run_cli_command("add mod ../tests/mod/Kca1_1.mod")
+        # Add point process
+        run_cli_command("add mod ../tests/mod/NMDA.mod")

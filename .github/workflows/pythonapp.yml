@@ -24,6 +24,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install coverage
+    - name: Collect MOD files
+      run: |
+        mkdir mod
+        wget https://standard-email.s3-eu-west-1.amazonaws.com/glia__dbbs_mod_collection__NMDA__granule_cell_deterministic.mod -o tests/mod/NMDA.mod
+        wget https://standard-email.s3-eu-west-1.amazonaws.com/glia__dbbs_mod_collection__Kca1_1__0.mod -o tests/mod/Kca1_1.mod
     - name: Run unittests
       run: |
         coverage run -m unittest discover -s tests
