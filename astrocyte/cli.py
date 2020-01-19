@@ -191,10 +191,14 @@ def make(target, content):
     f.write(content)
     f.close()
 
-def input_required(msg):
+
+def input_required(key, presets={}):
+    # Silly ol' trick for non-interactive mode.
+    if key in presets:
+        return presets[key]
     response = ""
     while not response:
-        response = input(msg)
+        response = input(key.capitalize() + ": ")
     return response
 
 if __name__ == "__main__":
