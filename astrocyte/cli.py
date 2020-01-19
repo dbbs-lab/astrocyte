@@ -214,16 +214,21 @@ def create_package(args, presets=None):
     return Package(folder, pkg_data)
 
 
-def add_mod_file(args):
+def _get_pkg(args):
     if args.local:
-        pkg = load_local_pkg()
+        return load_local_pkg()
     else:
-        pkg = get_package()
+        return get_package()
+
+
+def add_mod_file(args):
+    pkg = _get_pkg(args)
     pkg.add_mod_file(args.file, name=args.name, variant=args.variant)
 
 
 def edit_mod_file(args):
     pkg = get_package()
+    pkg = _get_pkg(args)
     pkg.edit_asset(args.asset, name=args.name, variant=args.variant)
 
 
