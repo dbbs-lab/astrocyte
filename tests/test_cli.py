@@ -38,7 +38,6 @@ class TestCLI(unittest.TestCase):
         os.chdir("my-test")
 
     def test_2_add_mod(self):
-        print("CWD?", os.getcwd())
         # Add mechanism
         run_cli_command("add mod ../tests/mod/Kca1_1.mod")
         # Add point process

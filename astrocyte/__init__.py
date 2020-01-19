@@ -94,13 +94,13 @@ class Package:
         from importlib import reload
 
         self.path = os.path.abspath(path)
-        # Insert pkg path as first directory on PATH to be found first.
         sys.path.insert(0, self.path)
-        # Reload the module and reimport the version.
+        # Reload module.
         pkg_module = __import__(self.name)
         reload(pkg_module)
-        self.version = __import__(self.name, globals(), locals(), ["__version__"], 0)
-        # Remove pkg path from PATH
+        rld = __import__(self.name, globals(), locals(), ["__version__"], 0)
+        # Get version from reloaded module
+        self.version = rld.__version__
         sys.path.remove(self.path)
 
     def get_source_path(self, *args):
@@ -127,12 +127,10 @@ class Package:
 
     def build(self):
         import subprocess
-        from time import sleep
 
         cwd = os.getcwd()
         os.chdir(self.path)
         self.increment_version()
-        sleep(0.5)
         print("Building glia package", self)
         self.commit("New build, incremented version")
         rcode = subprocess.call([sys.executable, "setup.py", "bdist_wheel"])
@@ -163,6 +161,7 @@ class Package:
         ]
         process, out, err = execute_command(cmnd)
         process.communicate()
+        process.wait()
         os.chdir(cwd)
         self._uploaded = process.returncode == 0
         if not self._uploaded:
@@ -209,6 +208,7 @@ class Package:
         process, out, err = execute_command(cmnd)
         # Extra call to communicate required or subprocess freezes.
         process.communicate()
+        process.wait()
         os.chdir(old_dir)
         self._installed = process.returncode == 0
         if not self._installed:
@@ -232,6 +232,7 @@ class Package:
         process, out, err = execute_command(cmnd)
         # Extra call to communicate required or subprocess freezes.
         process.communicate()
+        process.wait()
         os.chdir(old_dir)
         self._installed = process.returncode != 0
         if self._installed:
@@ -241,6 +242,8 @@ class Package:
             import glia
 
     def increment_version(self):
+        from time import sleep
+
         splits = self.version.split(".")
         new_version = ".".join(splits[0:-1]) + "." + str(int(splits[-1]) + 1)
         v = lambda v: '__version__ = "{}"'.format(v)
@@ -249,6 +252,7 @@ class Package:
         with open(self.get_source_path("__init__.py"), "w") as file:
             file.write(content)
             self.version = new_version
+            sleep(0.5)
 
     def commit(self, message):
         # Add modified files to commit
