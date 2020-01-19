@@ -156,7 +156,10 @@ def create_package(args, presets=None):
     print("Package skeleton created.")
 
 def add_mod_file(args):
-    pkg = get_package()
+    if args.local:
+        pkg = load_local_pkg()
+    else:
+        pkg = get_package()
     pkg.add_mod_file(args.file, name=args.name, variant=args.variant)
 
 def edit_mod_file(args):
