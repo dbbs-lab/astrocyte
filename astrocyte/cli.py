@@ -100,7 +100,7 @@ def astrocyte_cli():
         "-n", "--name", action="store", help="Asset name of the mod file."
     )
     add_mod_parser.add_argument(
-        "-v", "--variant", action="store", help="Variant name of the asset."
+        "-v", "--variant", action="store", help="Variant name of the asset.", default="0"
     )
     add_mod_parser.add_argument(
         "-l", "--local", action="store_true", help="Add the mod file for local use."
