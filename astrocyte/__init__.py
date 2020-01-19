@@ -140,6 +140,22 @@ class Package:
         else:
             print("Uploaded glia package", self)
 
+    def link(self):
+        import subprocess, site
+        cwd = os.getcwd()
+        os.chdir(self.path)
+
+        cmnd =  [sys.executable, "-m", "pip", "install", "-e", "."]
+        process, out, err = execute_command(cmnd)
+        process.communicate()
+        self._linked = process.returncode == 0
+
+        os.chdir(cwd)
+        if not self._linked:
+            raise BuildError("Could not create egg link:" + err)
+        else:
+            print(self, "egg linked.")
+
     def install(self):
         import subprocess, site
         site_packages = list(filter(lambda s: s.find("site-packages") != -1, site.getsitepackages()))
