@@ -76,6 +76,15 @@ def astrocyte_cli():
     create_package_parser.add_argument(
         "folder", action="store", help="Location of the package folder."
     )
+    create_package_parser.add_argument(
+        "--name", action="store", help="Name of the package."
+    )
+    create_package_parser.add_argument(
+        "--author", action="store", help="Author of the package."
+    )
+    create_package_parser.add_argument(
+        "--email", action="store", help="Email of the author."
+    )
     create_package_parser.set_defaults(func=create_package)
 
     # Add mod file
@@ -180,8 +189,16 @@ def create_package(args, presets=None):
     # Set presets for non-interactive mode.
     if presets is None:
         presets = {}
+        if args.author:
+            presets["author"] = args.author
+        if args.email:
+            presets["email"] = args.email
+        if args.name:
+            presets["pkg_name"] = args.name
     if not "folder" in presets:
         presets["folder"] = None
+    if not "pkg_name" in presets:
+        presets["pkg_name"] = None
     # Get paths. `folder` is the absolute path and `folder_name` doubles as the package name
     folder = os.path.abspath(args.folder)
     folder_name = args.folder.split(os.sep)[-1]
