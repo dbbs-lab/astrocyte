@@ -275,6 +275,7 @@ def _get_pkg(args):
 def add_mod_file(args):
     pkg = _get_pkg(args)
     pkg.add_mod_file(args.file, name=args.name, variant=args.variant)
+    print("Added mod file.")
 
 
 def remove_mod_file(args):
