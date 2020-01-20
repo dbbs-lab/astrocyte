@@ -118,7 +118,7 @@ class Package:
         )
 
     def find_mod_candidate(self, mod_part):
-        candidates = self.find_mod_candidates(mod_part)
+        candidates = self.get_mod_candidates(mod_part)
         if len(candidates) == 0:
             raise AstroError("No assets found matching '{}'".format(mod_part))
         elif len(candidates) > 1:
