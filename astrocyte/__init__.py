@@ -294,6 +294,8 @@ class Mod:
         self.variant = splits[-1]
         self.namespace = "__".join(splits[:2])
         self._is_point_process = self.is_point_process()
+        self._is_artificial_cell = self.is_artificial_cell()
+        self._name_statement = self.get_name_statement()
         self.writer = Writer(self)
         self.writer.update()
 
@@ -306,6 +308,14 @@ class Mod:
 
     def get_writername(self):
         return "mod_" + self.get_full_name()
+
+    def get_name_statement(self):
+        if self._is_point_process:
+            return "POINT_PROCESS"
+        elif self._is_artificial_cell:
+            return "ARTIFICIAL_CELL"
+        else:
+            return "SUFFIX"
 
     def set_names(self, name=None, variant=None):
         """
@@ -346,10 +356,7 @@ class Mod:
         # Define the statement that needs to be replaced with the new name
         # For a mechanism that's "SUFFIX <name>"
         # For a point_process it's "POINT_PROCESS <name>"
-        if not self._is_point_process:
-            name_statement = "SUFFIX"
-        else:
-            name_statement = "POINT_PROCESS"
+        name_statement = self._name_statement
         # Iterate over all lines to find name statements and the correct position
         # to insert our new name statement (as the first line of the NEURON block)
         for i, l in enumerate(lines):
@@ -373,6 +380,14 @@ class Mod:
             lines = f.readlines()
         for line in lines:
             if line.strip().lower().startswith("point_process"):
+                return True
+        return False
+
+    def is_artificial_cell(self):
+        with open(self.get_mod_file(), "r") as f:
+            lines = f.readlines()
+        for line in lines:
+            if line.strip().lower().startswith("artificial_cell"):
                 return True
         return False
 
