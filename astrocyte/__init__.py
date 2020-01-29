@@ -3,7 +3,7 @@ from shutil import copy2 as copy_file
 from appdirs import AppDirs
 from .exceptions import *
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 
 app_directories = AppDirs("Astrocyte", "Alexandria")
 
@@ -394,7 +394,7 @@ class Mod:
 
 def get_glia_version():
     # TODO: Use pip to find the installed glia version.
-    return "0.1.1"
+    return "0.1.10"
 
 
 def get_minimum_glia_version():

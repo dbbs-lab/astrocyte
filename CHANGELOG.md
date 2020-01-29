@@ -1,5 +1,9 @@
 # Version 0.2
 
+## 0.2.3
+
+* Raised minimum glia versions to 0.1.10
+
 ## 0.2.2
 
 * Added support for ARTIFICIAL_CELL mods.
