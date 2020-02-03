@@ -10,14 +10,9 @@ with open("README.md", "r") as fh:
 if not os.getenv("RTD_BUILD"):
     data_files = {
         "include_package_data": True,
-        "data_files": [
-            (
-                "templates",
-                glob.glob(
-                    os.path.join(os.path.dirname(__file__), "astrocyte", "templates", "*")
-                ),
-            )
-        ],
+        "package_data": {
+            "astrocyte": [os.path.join("templates", "*.txt")]
+        },
     }
 else:
     data_files = {}
