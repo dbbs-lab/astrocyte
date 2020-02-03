@@ -20,9 +20,7 @@ setuptools.setup(
          "Operating System :: OS Independent",
      ],
      include_package_data=True,
-     data_files=[
-         ('mod', glob.glob(os.path.join(os.path.dirname(__file__), "{{name}}", "mod", "*")))
-     ],
+     package_data = {"{{name}}": [os.path.join("mod","*")]},
      entry_points={
       'glia.package': ['{{name}} = {{name}}']
      },
