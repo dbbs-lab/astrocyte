@@ -17,6 +17,8 @@ except ModuleNotFoundError as _:
     from astrocyte.templates import create_template
     from astrocyte.exceptions import AstroError
 
+_exit_on_fail = True
+
 
 class AliasedSubParsersAction(argparse._SubParsersAction):
     old_init = staticmethod(argparse._ActionsContainer.__init__)
@@ -74,6 +76,15 @@ def astrocyte_cli():
     create_package_parser.add_argument(
         "folder", action="store", help="Location of the package folder."
     )
+    create_package_parser.add_argument(
+        "--name", action="store", help="Name of the package."
+    )
+    create_package_parser.add_argument(
+        "--author", action="store", help="Author of the package."
+    )
+    create_package_parser.add_argument(
+        "--email", action="store", help="Email of the author."
+    )
     create_package_parser.set_defaults(func=create_package)
 
     # Add mod file
@@ -89,7 +100,7 @@ def astrocyte_cli():
         "-n", "--name", action="store", help="Asset name of the mod file."
     )
     add_mod_parser.add_argument(
-        "-v", "--variant", action="store", help="Variant name of the asset."
+        "-v", "--variant", action="store", help="Variant name of the asset.", default="0"
     )
     add_mod_parser.add_argument(
         "-l", "--local", action="store_true", help="Add the mod file for local use."
@@ -109,6 +120,26 @@ def astrocyte_cli():
         "-l", "--local", action="store_true", help="Edit a local asset."
     )
     edit_parser.set_defaults(func=edit_mod_file)
+
+    # Remove mod file
+    remove_parser = subparsers.add_parser(
+        "remove", aliases=["rm"], description="Remove components from the package."
+    )
+    remove_subparsers = remove_parser.add_subparsers()
+    remove_mod_parser = remove_subparsers.add_parser(
+        "mod", aliases=("m"), description="Remove a mod file to your package."
+    )
+    remove_mod_parser.add_argument("name", action="store", help="Name of the asset.")
+    remove_mod_parser.add_argument(
+        "-v", "--variant", action="store", help="Variant name of the asset."
+    )
+    remove_mod_parser.add_argument(
+        "-f", "--force", action="store_true", help="Don't prompt for confirmation."
+    )
+    remove_mod_parser.add_argument(
+        "-l", "--local", action="store_true", help="Remove the mod file for local use."
+    )
+    remove_mod_parser.set_defaults(func=remove_mod_file)
 
     # Build wheel
     wheel_parser = subparsers.add_parser(
@@ -148,15 +179,26 @@ def astrocyte_cli():
             cl_args.func(cl_args)
         except AstroError as e:
             print("ERROR", str(e))
-            exit(1)
+            if _exit_on_fail:
+                exit(1)
+            else:
+                raise
 
 
 def create_package(args, presets=None):
     # Set presets for non-interactive mode.
     if presets is None:
         presets = {}
+        if args.author:
+            presets["author"] = args.author
+        if args.email:
+            presets["email"] = args.email
+        if args.name:
+            presets["pkg_name"] = args.name
     if not "folder" in presets:
         presets["folder"] = None
+    if not "pkg_name" in presets:
+        presets["pkg_name"] = None
     # Get paths. `folder` is the absolute path and `folder_name` doubles as the package name
     folder = os.path.abspath(args.folder)
     folder_name = args.folder.split(os.sep)[-1]
@@ -214,16 +256,39 @@ def create_package(args, presets=None):
     return Package(folder, pkg_data)
 
 
-def add_mod_file(args):
+def _get_pkg(args):
     if args.local:
-        pkg = load_local_pkg()
+        return load_local_pkg()
     else:
-        pkg = get_package()
+        return get_package()
+
+
+def add_mod_file(args):
+    pkg = _get_pkg(args)
     pkg.add_mod_file(args.file, name=args.name, variant=args.variant)
+    print("Added mod file.")
+
+
+def remove_mod_file(args):
+    pkg = _get_pkg(args)
+    candidates = pkg.get_mod_candidates(args.name)
+    if not candidates:
+        raise AstroError("No assets found matching '{}'".format(args.name))
+    message = (
+        str(len(candidates))
+        + " mod files found:\n"
+        + "\n".join(candidates)
+        + "\nAre you sure you want to remove the above mod files [y/n]? "
+    )
+    if not args.force and input(message) != "y":
+        return
+    for candidate in candidates:
+        pkg.remove_mod_file(candidate)
+    pkg.commit("Removed " + ", ".join(candidates))
 
 
 def edit_mod_file(args):
-    pkg = get_package()
+    pkg = _get_pkg(args)
     pkg.edit_asset(args.asset, name=args.name, variant=args.variant)
 
 

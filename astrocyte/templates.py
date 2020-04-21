@@ -12,6 +12,7 @@ def parse_template(name, locals={}):
         template_file = "_" + template_file[1:]
     file = open(os.path.join(os.path.dirname(__file__), "templates", template_file), "r")
     template_string = file.read()
+    file.close()
     for local, value in locals.items():
         template_string = template_string.replace("{{" + local + "}}", str(value))
     for const, value in get_constants().items():

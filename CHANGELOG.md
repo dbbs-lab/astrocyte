@@ -1,5 +1,19 @@
 # Version 0.2
 
+## 0.2.3
+
+* Raised minimum glia versions to 0.1.10
+
+## 0.2.2
+
+* Added support for ARTIFICIAL_CELL mods.
+
+## 0.2.1
+
+* Fixed `astro edit` command
+
+## 0.2.0
+
 * Added the `add mod --local`: Installs mod files locally for use on the local machine.
 * Fixed various bugs that occured when using Astrocyte in another folder than the current
   working directory.

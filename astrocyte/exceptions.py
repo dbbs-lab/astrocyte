@@ -24,3 +24,13 @@ class InvalidMetaError(UploadError):
 
 class GliaApiError(UploadError):
     pass
+
+
+class MultipleMatchesError(AstroError):
+    pass
+
+
+def multiple_candidates_error(mod_part, candidates):
+    return MultipleMatchesError(
+        "Multiple matches found for '{}':".format(mod_part) + "\n" + "\n".join(candidates)
+    )

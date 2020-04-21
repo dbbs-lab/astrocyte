@@ -3,7 +3,7 @@ from shutil import copy2 as copy_file
 from appdirs import AppDirs
 from .exceptions import *
 
-__version__ = "0.2.1"
+__version__ = "0.2.4"
 
 app_directories = AppDirs("Astrocyte", "Alexandria")
 
@@ -52,7 +52,7 @@ class Package:
         if name is not None:
             mod_name = "glia__" + self.name + "__" + name + "__" + variant
         else:
-            mod_name = get_path_mod_name(file)
+            mod_name = get_mod_name_from_path(file)
             og_name = mod_name
             if mod_name.startswith("glia__"):
                 if len(mod_name.split("__")) != 4:
@@ -79,43 +79,58 @@ class Package:
         return mod
 
     def edit_asset(self, mod_part, name=None, variant=None):
-        candidates = list(
-            map(
-                lambda x: get_path_mod_name(x),
-                find_files(self.get_mod_path("*" + mod_part + "*")),
-            )
-        )
-        if len(candidates) == 0:
-            raise AstroError("No assets found matching '{}'".format(mod_part))
-        elif len(candidates) > 1:
-            raise AstroError(
-                "Multiple matches found for '{}'".format(mod_part)
-                + "\n"
-                + "\n".join(candidates)
-            )
+        candidates = self.find_mod_candidate(mod_part)
         mod = Mod(self, candidates[0])
         mod.set_names(name=name, variant=variant)
 
+    def remove_mod_file(self, mod_filename):
+        candidates = self.get_mod_candidates(mod_filename)
+        if len(candidates) != 1:
+            raise multiple_candidates_error(mod_filename, candidates)
+        mod = Mod(self, mod_filename)
+        mod.delete()
+
     def set_path(self, path):
-        self.path = path
+        from importlib import reload
+
+        self.path = os.path.abspath(path)
         sys.path.insert(0, self.path)
-        self.version = __import__(self.name).__version__
+        # Reload module.
+        pkg_module = __import__(self.name)
+        reload(pkg_module)
+        rld = __import__(self.name, globals(), locals(), ["__version__"], 0)
+        # Get version from reloaded module
+        self.version = rld.__version__
         sys.path.remove(self.path)
 
     def get_source_path(self, *args):
-        return os.path.join(self.path, self.name, *args)
+        return os.path.join(os.path.abspath(self.path), self.name, *args)
 
     def get_mod_path(self, *args):
         return self.get_source_path("mod", *args)
 
+    def get_mod_candidates(self, mod_part):
+        return list(
+            map(
+                lambda x: get_mod_name_from_path(x),
+                find_files(self.get_mod_path("*" + mod_part + "*")),
+            )
+        )
+
+    def find_mod_candidate(self, mod_part):
+        candidates = self.get_mod_candidates(mod_part)
+        if len(candidates) == 0:
+            raise AstroError("No assets found matching '{}'".format(mod_part))
+        elif len(candidates) > 1:
+            raise multiple_candidates_error(mod_part, candidates)
+        return candidates
+
     def build(self):
         import subprocess
-        from time import sleep
 
         cwd = os.getcwd()
         os.chdir(self.path)
         self.increment_version()
-        sleep(0.5)
         print("Building glia package", self)
         self.commit("New build, incremented version")
         rcode = subprocess.call([sys.executable, "setup.py", "bdist_wheel"])
@@ -128,24 +143,20 @@ class Package:
         return hasattr(self, "_built") and self._built
 
     def upload(self):
-        from . import api
         import subprocess
 
-        cdw = os.getcwd()
+        cwd = os.getcwd()
         os.chdir(self.path)
         print("Uploading glia package", self)
-        api.upload_meta(self)
         cmnd = [
             "twine",
             "upload",
-            "--username=_",
-            "--password=" + api.get_valid_token(),
             "--disable-progress-bar",
-            "--repository-url=" + api.__repo_url__,
             os.path.join("dist", "*{}*".format(self.version)),
         ]
         process, out, err = execute_command(cmnd)
         process.communicate()
+        process.wait()
         os.chdir(cwd)
         self._uploaded = process.returncode == 0
         if not self._uploaded:
@@ -192,11 +203,12 @@ class Package:
         process, out, err = execute_command(cmnd)
         # Extra call to communicate required or subprocess freezes.
         process.communicate()
+        process.wait()
         os.chdir(old_dir)
         self._installed = process.returncode == 0
         if not self._installed:
             raise BuildError("Could not install build:" + err)
-        else:
+        elif not os.getenv("CI"):
             print("Installed glia package", self)
             import glia
 
@@ -215,6 +227,7 @@ class Package:
         process, out, err = execute_command(cmnd)
         # Extra call to communicate required or subprocess freezes.
         process.communicate()
+        process.wait()
         os.chdir(old_dir)
         self._installed = process.returncode != 0
         if self._installed:
@@ -224,6 +237,8 @@ class Package:
             import glia
 
     def increment_version(self):
+        from time import sleep
+
         splits = self.version.split(".")
         new_version = ".".join(splits[0:-1]) + "." + str(int(splits[-1]) + 1)
         v = lambda v: '__version__ = "{}"'.format(v)
@@ -232,6 +247,7 @@ class Package:
         with open(self.get_source_path("__init__.py"), "w") as file:
             file.write(content)
             self.version = new_version
+            sleep(0.5)
 
     def commit(self, message):
         # Add modified files to commit
@@ -256,7 +272,8 @@ class Package:
 def get_package(path=None):
     path = path or os.getcwd()
     try:
-        pkg_data = json.load(open(os.path.join(path, ".astro", "pkg")))
+        with open(os.path.join(path, ".astro", "pkg")) as file:
+            pkg_data = json.load(file)
     except FileNotFoundError as _:
         raise AstroError("This directory is not a glia package.")
     pkg = Package(path, pkg_data)
@@ -272,14 +289,28 @@ class Mod:
         self.variant = splits[-1]
         self.namespace = "__".join(splits[:2])
         self._is_point_process = self.is_point_process()
+        self._is_artificial_cell = self.is_artificial_cell()
+        self._name_statement = self.get_name_statement()
         self.writer = Writer(self)
         self.writer.update()
+
+    def delete(self):
+        self.writer.remove()
+        os.remove(self.get_mod_file())
 
     def get_full_name(self):
         return get_asset_name(self.namespace, self.asset_name, self.variant)
 
     def get_writername(self):
         return "mod_" + self.get_full_name()
+
+    def get_name_statement(self):
+        if self._is_point_process:
+            return "POINT_PROCESS"
+        elif self._is_artificial_cell:
+            return "ARTIFICIAL_CELL"
+        else:
+            return "SUFFIX"
 
     def set_names(self, name=None, variant=None):
         """
@@ -320,10 +351,7 @@ class Mod:
         # Define the statement that needs to be replaced with the new name
         # For a mechanism that's "SUFFIX <name>"
         # For a point_process it's "POINT_PROCESS <name>"
-        if not self._is_point_process:
-            name_statement = "SUFFIX"
-        else:
-            name_statement = "POINT_PROCESS"
+        name_statement = self._name_statement
         # Iterate over all lines to find name statements and the correct position
         # to insert our new name statement (as the first line of the NEURON block)
         for i, l in enumerate(lines):
@@ -350,10 +378,18 @@ class Mod:
                 return True
         return False
 
+    def is_artificial_cell(self):
+        with open(self.get_mod_file(), "r") as f:
+            lines = f.readlines()
+        for line in lines:
+            if line.strip().lower().startswith("artificial_cell"):
+                return True
+        return False
+
 
 def get_glia_version():
     # TODO: Use pip to find the installed glia version.
-    return "0.1.1"
+    return "0.1.10"
 
 
 def get_minimum_glia_version():
@@ -367,11 +403,14 @@ class Writer:
 
     def __init__(self, obj):
         self.obj = obj
+        self.removed = False
 
     def get_init_path(self):
         return self.obj.pkg.get_source_path("__init__.py")
 
     def update(self):
+        if self.removed:
+            return
         init_file = open(self.get_init_path(), "r")
         self.read = init_file.readlines()
         init_file.close()
@@ -447,6 +486,12 @@ class Writer:
         self.read[i:i] = self.header(indent)
         self.write()
 
+    def remove(self):
+        start_line, end_line = self.find_tagline(find_end=True)
+        del self.read[(start_line - 1) : (end_line + 1)]
+        self.write()
+        self.removed = True
+
     def header(self, indent=0):
         return [
             self.line("#-Generated by Astrocyte v{}".format(__version__), indent),
@@ -516,7 +561,7 @@ def get_asset_name(namespace, name, variant="0"):
     return "{}__{}__{}".format(namespace, name, variant)
 
 
-def get_path_mod_name(path):
+def get_mod_name_from_path(path):
     return os.path.splitext(os.path.basename(path))[0]
 
 
