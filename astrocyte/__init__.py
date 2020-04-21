@@ -143,20 +143,15 @@ class Package:
         return hasattr(self, "_built") and self._built
 
     def upload(self):
-        from . import api
         import subprocess
 
         cwd = os.getcwd()
         os.chdir(self.path)
         print("Uploading glia package", self)
-        api.upload_meta(self)
         cmnd = [
             "twine",
             "upload",
-            "--username=_",
-            "--password=" + api.get_valid_token(),
             "--disable-progress-bar",
-            "--repository-url=" + api.__repo_url__,
             os.path.join("dist", "*{}*".format(self.version)),
         ]
         process, out, err = execute_command(cmnd)
