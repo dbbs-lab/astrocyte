@@ -6,3 +6,5 @@
 # astrocyte
 
 Packager for Glia. Distribute your models amongst the stars.
+
+Archived. This functionality is now part of https://github.com/dbbs-lab/glia
